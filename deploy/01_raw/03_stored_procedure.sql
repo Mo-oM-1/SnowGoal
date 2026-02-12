@@ -109,6 +109,3 @@ def main(session: snowpark.Session, competition_code: str) -> str:
     except Exception as e:
         return f"ERROR [{competition_code}]: {str(e)}"
 $$;
-
--- Test (remplacer par ta vraie API key d'abord)
--- CALL FETCH_FOOTBALL_DATA('PL');
