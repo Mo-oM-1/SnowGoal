@@ -5,11 +5,16 @@
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 
--- Créer un secret pour l'API key (sécurisé)
-CREATE OR REPLACE SECRET FOOTBALL_API_KEY
-    TYPE = GENERIC_STRING
-    SECRET_STRING = '<YOUR_API_KEY_HERE>'
-    COMMENT = 'football-data.org API key';
+-- ============================================
+-- IMPORTANT: Créer le secret manuellement dans Snowflake
+-- Ne jamais commiter la clé API dans le code !
+-- ============================================
+-- Exécuter cette commande dans Snowflake avec ta vraie clé :
+--
+-- CREATE OR REPLACE SECRET SNOWGOAL_DB.RAW.FOOTBALL_API_KEY
+--     TYPE = GENERIC_STRING
+--     SECRET_STRING = '<ta-cle-api>';
+-- ============================================
 
 -- Network rule pour autoriser l'accès à l'API
 CREATE OR REPLACE NETWORK RULE FOOTBALL_API_NETWORK_RULE
