@@ -3,13 +3,13 @@
 -- ============================================
 USE ROLE ACCOUNTADMIN;
 USE DATABASE SNOWGOAL_DB;
-USE SCHEMA RAW;
+USE SCHEMA COMMON;
 
 -- ============================================
 -- IMPORTANT: Créer le secret manuellement dans Snowflake
 -- Ne jamais commiter la clé API dans le code !
 -- ============================================
--- CREATE OR REPLACE SECRET SNOWGOAL_DB.RAW.FOOTBALL_API_KEY
+-- CREATE OR REPLACE SECRET SNOWGOAL_DB.COMMON.FOOTBALL_API_KEY
 --     TYPE = GENERIC_STRING
 --     SECRET_STRING = '<ta-cle-api>';
 -- ============================================
@@ -18,12 +18,12 @@ USE SCHEMA RAW;
 CREATE OR REPLACE NETWORK RULE FOOTBALL_API_NETWORK_RULE
     MODE = EGRESS
     TYPE = HOST_PORT
-    VALUE_LIST = ('v3.football.api-sports.io:443');
+    VALUE_LIST = ('api.football-data.org:443');
 
 -- External Access Integration
 CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION FOOTBALL_API_ACCESS
-    ALLOWED_NETWORK_RULES = (FOOTBALL_API_NETWORK_RULE)
-    ALLOWED_AUTHENTICATION_SECRETS = (FOOTBALL_API_KEY)
+    ALLOWED_NETWORK_RULES = (SNOWGOAL_DB.COMMON.FOOTBALL_API_NETWORK_RULE)
+    ALLOWED_AUTHENTICATION_SECRETS = (SNOWGOAL_DB.COMMON.FOOTBALL_API_KEY)
     ENABLED = TRUE;
 
 -- Stored Procedure qui référence le fichier Python sur FOOTBALL_API_STAGE
@@ -35,4 +35,4 @@ PACKAGES = ('snowflake-snowpark-python', 'requests')
 IMPORTS = ('@SNOWGOAL_DB.COMMON.FOOTBALL_API_STAGE/fetch_football_api.py')
 HANDLER = 'fetch_football_api.main'
 EXTERNAL_ACCESS_INTEGRATIONS = (FOOTBALL_API_ACCESS)
-SECRETS = ('api_key' = FOOTBALL_API_KEY);
+SECRETS = ('api_key' = SNOWGOAL_DB.COMMON.FOOTBALL_API_KEY);
