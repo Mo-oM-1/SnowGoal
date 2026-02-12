@@ -1,0 +1,296 @@
+-- ============================================
+-- SNOWGOAL - Tasks (Orchestration DAG)
+-- ============================================
+
+USE DATABASE SNOWGOAL_DB;
+USE SCHEMA COMMON;
+
+-- ----------------------------------------
+-- ROOT TASK: Fetch data from API
+-- Runs every 6 hours (API rate limit friendly)
+-- ----------------------------------------
+CREATE OR REPLACE TASK TASK_FETCH_ALL_COMPETITIONS
+    WAREHOUSE = SNOWGOAL_WH
+    SCHEDULE = 'USING CRON 0 */6 * * * UTC'
+    COMMENT = 'Root task: Fetch data for all competitions from football-data.org'
+AS
+CALL FETCH_FOOTBALL_DATA('PL');
+
+-- Note: Free tier = 10 calls/min, 5 endpoints per competition
+-- For multiple leagues, we need to space out calls
+
+-- ----------------------------------------
+-- CHILD TASKS: Additional Leagues (with delay)
+-- ----------------------------------------
+CREATE OR REPLACE TASK TASK_FETCH_LA_LIGA
+    WAREHOUSE = SNOWGOAL_WH
+    AFTER TASK_FETCH_ALL_COMPETITIONS
+    COMMENT = 'Fetch La Liga data'
+AS
+BEGIN
+    CALL SYSTEM$WAIT(60); -- Wait 1 min to respect rate limit
+    CALL FETCH_FOOTBALL_DATA('PD');
+END;
+
+CREATE OR REPLACE TASK TASK_FETCH_BUNDESLIGA
+    WAREHOUSE = SNOWGOAL_WH
+    AFTER TASK_FETCH_LA_LIGA
+    COMMENT = 'Fetch Bundesliga data'
+AS
+BEGIN
+    CALL SYSTEM$WAIT(60);
+    CALL FETCH_FOOTBALL_DATA('BL1');
+END;
+
+CREATE OR REPLACE TASK TASK_FETCH_SERIE_A
+    WAREHOUSE = SNOWGOAL_WH
+    AFTER TASK_FETCH_BUNDESLIGA
+    COMMENT = 'Fetch Serie A data'
+AS
+BEGIN
+    CALL SYSTEM$WAIT(60);
+    CALL FETCH_FOOTBALL_DATA('SA');
+END;
+
+CREATE OR REPLACE TASK TASK_FETCH_LIGUE_1
+    WAREHOUSE = SNOWGOAL_WH
+    AFTER TASK_FETCH_SERIE_A
+    COMMENT = 'Fetch Ligue 1 data'
+AS
+BEGIN
+    CALL SYSTEM$WAIT(60);
+    CALL FETCH_FOOTBALL_DATA('FL1');
+END;
+
+-- ----------------------------------------
+-- MERGE TASK: Transform to Silver
+-- Runs after all fetches complete
+-- ----------------------------------------
+CREATE OR REPLACE TASK TASK_MERGE_TO_SILVER
+    WAREHOUSE = SNOWGOAL_WH
+    AFTER TASK_FETCH_LIGUE_1
+    COMMENT = 'Merge staging data into Silver tables'
+AS
+BEGIN
+    -- MERGE MATCHES
+    MERGE INTO SILVER.MATCHES AS target
+    USING (
+        SELECT DISTINCT
+            MATCH_ID, COMPETITION_CODE, SEASON_YEAR, MATCH_DATE, STATUS, MATCHDAY, STAGE,
+            HOME_TEAM_ID, HOME_TEAM_NAME, HOME_TEAM_SHORT, HOME_TEAM_TLA,
+            AWAY_TEAM_ID, AWAY_TEAM_NAME, AWAY_TEAM_SHORT, AWAY_TEAM_TLA,
+            HOME_SCORE, AWAY_SCORE, HOME_SCORE_HT, AWAY_SCORE_HT,
+            WINNER, REFEREE_NAME, LAST_UPDATED
+        FROM STAGING.V_MATCHES
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY MATCH_ID ORDER BY LOADED_AT DESC) = 1
+    ) AS source
+    ON target.MATCH_ID = source.MATCH_ID
+    WHEN MATCHED AND source.LAST_UPDATED > target.LAST_UPDATED THEN UPDATE SET
+        COMPETITION_CODE = source.COMPETITION_CODE,
+        SEASON_YEAR = source.SEASON_YEAR,
+        MATCH_DATE = source.MATCH_DATE,
+        STATUS = source.STATUS,
+        MATCHDAY = source.MATCHDAY,
+        STAGE = source.STAGE,
+        HOME_TEAM_ID = source.HOME_TEAM_ID,
+        HOME_TEAM_NAME = source.HOME_TEAM_NAME,
+        HOME_TEAM_SHORT = source.HOME_TEAM_SHORT,
+        HOME_TEAM_TLA = source.HOME_TEAM_TLA,
+        AWAY_TEAM_ID = source.AWAY_TEAM_ID,
+        AWAY_TEAM_NAME = source.AWAY_TEAM_NAME,
+        AWAY_TEAM_SHORT = source.AWAY_TEAM_SHORT,
+        AWAY_TEAM_TLA = source.AWAY_TEAM_TLA,
+        HOME_SCORE = source.HOME_SCORE,
+        AWAY_SCORE = source.AWAY_SCORE,
+        HOME_SCORE_HT = source.HOME_SCORE_HT,
+        AWAY_SCORE_HT = source.AWAY_SCORE_HT,
+        WINNER = source.WINNER,
+        REFEREE_NAME = source.REFEREE_NAME,
+        LAST_UPDATED = source.LAST_UPDATED,
+        _UPDATED_AT = CURRENT_TIMESTAMP()
+    WHEN NOT MATCHED THEN INSERT (
+        MATCH_ID, COMPETITION_CODE, SEASON_YEAR, MATCH_DATE, STATUS, MATCHDAY, STAGE,
+        HOME_TEAM_ID, HOME_TEAM_NAME, HOME_TEAM_SHORT, HOME_TEAM_TLA,
+        AWAY_TEAM_ID, AWAY_TEAM_NAME, AWAY_TEAM_SHORT, AWAY_TEAM_TLA,
+        HOME_SCORE, AWAY_SCORE, HOME_SCORE_HT, AWAY_SCORE_HT,
+        WINNER, REFEREE_NAME, LAST_UPDATED
+    ) VALUES (
+        source.MATCH_ID, source.COMPETITION_CODE, source.SEASON_YEAR, source.MATCH_DATE,
+        source.STATUS, source.MATCHDAY, source.STAGE,
+        source.HOME_TEAM_ID, source.HOME_TEAM_NAME, source.HOME_TEAM_SHORT, source.HOME_TEAM_TLA,
+        source.AWAY_TEAM_ID, source.AWAY_TEAM_NAME, source.AWAY_TEAM_SHORT, source.AWAY_TEAM_TLA,
+        source.HOME_SCORE, source.AWAY_SCORE, source.HOME_SCORE_HT, source.AWAY_SCORE_HT,
+        source.WINNER, source.REFEREE_NAME, source.LAST_UPDATED
+    );
+
+    -- MERGE STANDINGS
+    MERGE INTO SILVER.STANDINGS AS target
+    USING (
+        SELECT DISTINCT
+            TEAM_ID, COMPETITION_CODE, SEASON_YEAR, POSITION, TEAM_NAME, TEAM_SHORT,
+            TEAM_TLA, TEAM_CREST, PLAYED, WON, DRAW, LOST, POINTS,
+            GOALS_FOR, GOALS_AGAINST, GOAL_DIFF, FORM
+        FROM STAGING.V_STANDINGS
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY TEAM_ID, COMPETITION_CODE, SEASON_YEAR ORDER BY LOADED_AT DESC) = 1
+    ) AS source
+    ON target.TEAM_ID = source.TEAM_ID
+       AND target.COMPETITION_CODE = source.COMPETITION_CODE
+       AND target.SEASON_YEAR = source.SEASON_YEAR
+    WHEN MATCHED THEN UPDATE SET
+        POSITION = source.POSITION,
+        TEAM_NAME = source.TEAM_NAME,
+        TEAM_SHORT = source.TEAM_SHORT,
+        TEAM_TLA = source.TEAM_TLA,
+        TEAM_CREST = source.TEAM_CREST,
+        PLAYED = source.PLAYED,
+        WON = source.WON,
+        DRAW = source.DRAW,
+        LOST = source.LOST,
+        POINTS = source.POINTS,
+        GOALS_FOR = source.GOALS_FOR,
+        GOALS_AGAINST = source.GOALS_AGAINST,
+        GOAL_DIFF = source.GOAL_DIFF,
+        FORM = source.FORM,
+        _UPDATED_AT = CURRENT_TIMESTAMP()
+    WHEN NOT MATCHED THEN INSERT (
+        TEAM_ID, COMPETITION_CODE, SEASON_YEAR, POSITION, TEAM_NAME, TEAM_SHORT,
+        TEAM_TLA, TEAM_CREST, PLAYED, WON, DRAW, LOST, POINTS,
+        GOALS_FOR, GOALS_AGAINST, GOAL_DIFF, FORM
+    ) VALUES (
+        source.TEAM_ID, source.COMPETITION_CODE, source.SEASON_YEAR, source.POSITION,
+        source.TEAM_NAME, source.TEAM_SHORT, source.TEAM_TLA, source.TEAM_CREST,
+        source.PLAYED, source.WON, source.DRAW, source.LOST, source.POINTS,
+        source.GOALS_FOR, source.GOALS_AGAINST, source.GOAL_DIFF, source.FORM
+    );
+
+    -- MERGE TEAMS
+    MERGE INTO SILVER.TEAMS AS target
+    USING (
+        SELECT DISTINCT
+            TEAM_ID, COMPETITION_CODE, TEAM_NAME, TEAM_SHORT, TEAM_TLA, TEAM_CREST,
+            ADDRESS, WEBSITE, FOUNDED, CLUB_COLORS, VENUE,
+            COACH_ID, COACH_NAME, COACH_NATIONALITY
+        FROM STAGING.V_TEAMS
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY TEAM_ID ORDER BY LOADED_AT DESC) = 1
+    ) AS source
+    ON target.TEAM_ID = source.TEAM_ID
+    WHEN MATCHED THEN UPDATE SET
+        COMPETITION_CODE = source.COMPETITION_CODE,
+        TEAM_NAME = source.TEAM_NAME,
+        TEAM_SHORT = source.TEAM_SHORT,
+        TEAM_TLA = source.TEAM_TLA,
+        TEAM_CREST = source.TEAM_CREST,
+        ADDRESS = source.ADDRESS,
+        WEBSITE = source.WEBSITE,
+        FOUNDED = source.FOUNDED,
+        CLUB_COLORS = source.CLUB_COLORS,
+        VENUE = source.VENUE,
+        COACH_ID = source.COACH_ID,
+        COACH_NAME = source.COACH_NAME,
+        COACH_NATIONALITY = source.COACH_NATIONALITY,
+        _UPDATED_AT = CURRENT_TIMESTAMP()
+    WHEN NOT MATCHED THEN INSERT (
+        TEAM_ID, COMPETITION_CODE, TEAM_NAME, TEAM_SHORT, TEAM_TLA, TEAM_CREST,
+        ADDRESS, WEBSITE, FOUNDED, CLUB_COLORS, VENUE,
+        COACH_ID, COACH_NAME, COACH_NATIONALITY
+    ) VALUES (
+        source.TEAM_ID, source.COMPETITION_CODE, source.TEAM_NAME, source.TEAM_SHORT,
+        source.TEAM_TLA, source.TEAM_CREST, source.ADDRESS, source.WEBSITE,
+        source.FOUNDED, source.CLUB_COLORS, source.VENUE,
+        source.COACH_ID, source.COACH_NAME, source.COACH_NATIONALITY
+    );
+
+    -- MERGE SCORERS
+    MERGE INTO SILVER.SCORERS AS target
+    USING (
+        SELECT DISTINCT
+            PLAYER_ID, COMPETITION_CODE, SEASON_YEAR, PLAYER_NAME, FIRST_NAME, LAST_NAME,
+            NATIONALITY, POSITION, DATE_OF_BIRTH, TEAM_ID, TEAM_NAME, TEAM_SHORT,
+            GOALS, ASSISTS, PENALTIES, PLAYED_MATCHES
+        FROM STAGING.V_SCORERS
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY PLAYER_ID, COMPETITION_CODE, SEASON_YEAR ORDER BY LOADED_AT DESC) = 1
+    ) AS source
+    ON target.PLAYER_ID = source.PLAYER_ID
+       AND target.COMPETITION_CODE = source.COMPETITION_CODE
+       AND target.SEASON_YEAR = source.SEASON_YEAR
+    WHEN MATCHED THEN UPDATE SET
+        PLAYER_NAME = source.PLAYER_NAME,
+        FIRST_NAME = source.FIRST_NAME,
+        LAST_NAME = source.LAST_NAME,
+        NATIONALITY = source.NATIONALITY,
+        POSITION = source.POSITION,
+        DATE_OF_BIRTH = source.DATE_OF_BIRTH,
+        TEAM_ID = source.TEAM_ID,
+        TEAM_NAME = source.TEAM_NAME,
+        TEAM_SHORT = source.TEAM_SHORT,
+        GOALS = source.GOALS,
+        ASSISTS = source.ASSISTS,
+        PENALTIES = source.PENALTIES,
+        PLAYED_MATCHES = source.PLAYED_MATCHES,
+        _UPDATED_AT = CURRENT_TIMESTAMP()
+    WHEN NOT MATCHED THEN INSERT (
+        PLAYER_ID, COMPETITION_CODE, SEASON_YEAR, PLAYER_NAME, FIRST_NAME, LAST_NAME,
+        NATIONALITY, POSITION, DATE_OF_BIRTH, TEAM_ID, TEAM_NAME, TEAM_SHORT,
+        GOALS, ASSISTS, PENALTIES, PLAYED_MATCHES
+    ) VALUES (
+        source.PLAYER_ID, source.COMPETITION_CODE, source.SEASON_YEAR, source.PLAYER_NAME,
+        source.FIRST_NAME, source.LAST_NAME, source.NATIONALITY, source.POSITION,
+        source.DATE_OF_BIRTH, source.TEAM_ID, source.TEAM_NAME, source.TEAM_SHORT,
+        source.GOALS, source.ASSISTS, source.PENALTIES, source.PLAYED_MATCHES
+    );
+
+    -- MERGE COMPETITIONS
+    MERGE INTO SILVER.COMPETITIONS AS target
+    USING (
+        SELECT DISTINCT
+            COMPETITION_ID, COMPETITION_CODE, COMPETITION_NAME, TYPE, EMBLEM,
+            AREA_NAME, AREA_CODE, AREA_FLAG, CURRENT_SEASON_ID,
+            SEASON_START, SEASON_END, CURRENT_MATCHDAY
+        FROM STAGING.V_COMPETITIONS
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY COMPETITION_ID ORDER BY LOADED_AT DESC) = 1
+    ) AS source
+    ON target.COMPETITION_ID = source.COMPETITION_ID
+    WHEN MATCHED THEN UPDATE SET
+        COMPETITION_CODE = source.COMPETITION_CODE,
+        COMPETITION_NAME = source.COMPETITION_NAME,
+        TYPE = source.TYPE,
+        EMBLEM = source.EMBLEM,
+        AREA_NAME = source.AREA_NAME,
+        AREA_CODE = source.AREA_CODE,
+        AREA_FLAG = source.AREA_FLAG,
+        CURRENT_SEASON_ID = source.CURRENT_SEASON_ID,
+        SEASON_START = source.SEASON_START,
+        SEASON_END = source.SEASON_END,
+        CURRENT_MATCHDAY = source.CURRENT_MATCHDAY,
+        _UPDATED_AT = CURRENT_TIMESTAMP()
+    WHEN NOT MATCHED THEN INSERT (
+        COMPETITION_ID, COMPETITION_CODE, COMPETITION_NAME, TYPE, EMBLEM,
+        AREA_NAME, AREA_CODE, AREA_FLAG, CURRENT_SEASON_ID,
+        SEASON_START, SEASON_END, CURRENT_MATCHDAY
+    ) VALUES (
+        source.COMPETITION_ID, source.COMPETITION_CODE, source.COMPETITION_NAME,
+        source.TYPE, source.EMBLEM, source.AREA_NAME, source.AREA_CODE,
+        source.AREA_FLAG, source.CURRENT_SEASON_ID, source.SEASON_START,
+        source.SEASON_END, source.CURRENT_MATCHDAY
+    );
+END;
+
+-- ----------------------------------------
+-- Resume all tasks (enable DAG)
+-- ----------------------------------------
+ALTER TASK TASK_MERGE_TO_SILVER RESUME;
+ALTER TASK TASK_FETCH_LIGUE_1 RESUME;
+ALTER TASK TASK_FETCH_SERIE_A RESUME;
+ALTER TASK TASK_FETCH_BUNDESLIGA RESUME;
+ALTER TASK TASK_FETCH_LA_LIGA RESUME;
+ALTER TASK TASK_FETCH_ALL_COMPETITIONS RESUME;
+
+-- Verify DAG
+SHOW TASKS IN SCHEMA COMMON;
+
+-- View task dependencies
+SELECT *
+FROM TABLE(INFORMATION_SCHEMA.TASK_DEPENDENTS(
+    TASK_NAME => 'SNOWGOAL_DB.COMMON.TASK_FETCH_ALL_COMPETITIONS',
+    RECURSIVE => TRUE
+));
