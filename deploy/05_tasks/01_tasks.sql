@@ -10,7 +10,7 @@ USE SCHEMA COMMON;
 -- Runs every 6 hours (API rate limit friendly)
 -- ----------------------------------------
 CREATE OR REPLACE TASK TASK_FETCH_ALL_COMPETITIONS
-    WAREHOUSE = SNOWGOAL_WH
+    WAREHOUSE = SNOWGOAL_WH_XS
     SCHEDULE = 'USING CRON 0 */6 * * * UTC'
     COMMENT = 'Root task: Fetch data for all competitions from football-data.org'
 AS
@@ -23,7 +23,7 @@ CALL FETCH_FOOTBALL_DATA('PL');
 -- CHILD TASKS: Additional Leagues (with delay)
 -- ----------------------------------------
 CREATE OR REPLACE TASK TASK_FETCH_LA_LIGA
-    WAREHOUSE = SNOWGOAL_WH
+    WAREHOUSE = SNOWGOAL_WH_XS
     AFTER TASK_FETCH_ALL_COMPETITIONS
     COMMENT = 'Fetch La Liga data'
 AS
@@ -33,7 +33,7 @@ BEGIN
 END;
 
 CREATE OR REPLACE TASK TASK_FETCH_BUNDESLIGA
-    WAREHOUSE = SNOWGOAL_WH
+    WAREHOUSE = SNOWGOAL_WH_XS
     AFTER TASK_FETCH_LA_LIGA
     COMMENT = 'Fetch Bundesliga data'
 AS
@@ -43,7 +43,7 @@ BEGIN
 END;
 
 CREATE OR REPLACE TASK TASK_FETCH_SERIE_A
-    WAREHOUSE = SNOWGOAL_WH
+    WAREHOUSE = SNOWGOAL_WH_XS
     AFTER TASK_FETCH_BUNDESLIGA
     COMMENT = 'Fetch Serie A data'
 AS
@@ -53,7 +53,7 @@ BEGIN
 END;
 
 CREATE OR REPLACE TASK TASK_FETCH_LIGUE_1
-    WAREHOUSE = SNOWGOAL_WH
+    WAREHOUSE = SNOWGOAL_WH_XS
     AFTER TASK_FETCH_SERIE_A
     COMMENT = 'Fetch Ligue 1 data'
 AS
@@ -67,7 +67,7 @@ END;
 -- Runs after all fetches complete
 -- ----------------------------------------
 CREATE OR REPLACE TASK TASK_MERGE_TO_SILVER
-    WAREHOUSE = SNOWGOAL_WH
+    WAREHOUSE = SNOWGOAL_WH_XS
     AFTER TASK_FETCH_LIGUE_1
     COMMENT = 'Merge staging data into Silver tables'
 AS
