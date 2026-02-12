@@ -9,18 +9,27 @@ st.set_page_config(page_title="Standings | SnowGoal", page_icon="🏆", layout="
 
 st.title("🏆 League Standings")
 
-# Get Snowflake session
+# League names mapping
+LEAGUE_NAMES = {
+    'PL': 'Premier League',
+    'PD': 'La Liga',
+    'BL1': 'Bundesliga',
+    'SA': 'Serie A',
+    'FL1': 'Ligue 1'
+}
+
 try:
     session = get_active_session()
 
-    # Competition selector
+    # Get available competitions
     competitions = session.sql("""
-        SELECT DISTINCT COMPETITION_CODE, COMPETITION_NAME
+        SELECT DISTINCT COMPETITION_CODE
         FROM GOLD.DT_LEAGUE_STANDINGS
-        ORDER BY COMPETITION_NAME
+        ORDER BY COMPETITION_CODE
     """).collect()
 
-    comp_options = {row['COMPETITION_NAME']: row['COMPETITION_CODE'] for row in competitions}
+    comp_codes = [row['COMPETITION_CODE'] for row in competitions]
+    comp_options = {LEAGUE_NAMES.get(code, code): code for code in comp_codes}
 
     if comp_options:
         selected_comp = st.selectbox(
@@ -34,8 +43,8 @@ try:
         standings_df = session.sql(f"""
             SELECT
                 POSITION,
-                TEAM_CREST,
                 TEAM_NAME,
+                TEAM_TLA,
                 PLAYED,
                 WON,
                 DRAW,
@@ -57,48 +66,28 @@ try:
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 leader = standings_df.iloc[0]
-                st.metric("🥇 Leader", leader['TEAM_NAME'], f"{leader['POINTS']} pts")
+                st.metric("🥇 Leader", leader['TEAM_NAME'], f"{int(leader['POINTS'])} pts")
             with col2:
-                total_goals = standings_df['GOALS_FOR'].sum()
+                total_goals = int(standings_df['GOALS_FOR'].sum())
                 st.metric("⚽ Total Goals", total_goals)
             with col3:
                 avg_ppg = standings_df['POINTS_PER_GAME'].mean()
                 st.metric("📊 Avg PPG", f"{avg_ppg:.2f}")
             with col4:
-                matchday = standings_df['PLAYED'].max()
+                matchday = int(standings_df['PLAYED'].max())
                 st.metric("📅 Matchday", matchday)
 
             st.divider()
 
             # Standings table
-            st.dataframe(
-                standings_df,
-                column_config={
-                    "POSITION": st.column_config.NumberColumn("Pos", width="small"),
-                    "TEAM_CREST": st.column_config.ImageColumn("", width="small"),
-                    "TEAM_NAME": st.column_config.TextColumn("Team", width="medium"),
-                    "PLAYED": st.column_config.NumberColumn("P", width="small"),
-                    "WON": st.column_config.NumberColumn("W", width="small"),
-                    "DRAW": st.column_config.NumberColumn("D", width="small"),
-                    "LOST": st.column_config.NumberColumn("L", width="small"),
-                    "GOALS_FOR": st.column_config.NumberColumn("GF", width="small"),
-                    "GOALS_AGAINST": st.column_config.NumberColumn("GA", width="small"),
-                    "GOAL_DIFF": st.column_config.NumberColumn("GD", width="small"),
-                    "POINTS": st.column_config.NumberColumn("Pts", width="small"),
-                    "FORM": st.column_config.TextColumn("Form", width="small"),
-                    "POINTS_PER_GAME": st.column_config.NumberColumn("PPG", format="%.2f", width="small"),
-                    "WIN_PERCENTAGE": st.column_config.ProgressColumn("Win %", min_value=0, max_value=100, width="small")
-                },
-                hide_index=True,
-                use_container_width=True
-            )
+            st.dataframe(standings_df, use_container_width=True, hide_index=True)
 
-            # Points distribution chart
+            # Points chart
             st.subheader("📊 Points Distribution")
-            st.bar_chart(standings_df.set_index('TEAM_NAME')['POINTS'])
+            st.bar_chart(standings_df.set_index('TEAM_TLA')['POINTS'])
 
         else:
-            st.warning("No standings data available for this league.")
+            st.warning("No standings data available.")
     else:
         st.info("No competition data found. Run the data pipeline first.")
 
