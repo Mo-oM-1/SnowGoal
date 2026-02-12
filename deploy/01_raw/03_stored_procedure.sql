@@ -1,7 +1,7 @@
 -- ============================================
 -- SNOWGOAL - Stored Procedure (API Fetch)
 -- ============================================
-
+USE ROLE ACCOUNTADMIN;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 
@@ -18,14 +18,13 @@ USE SCHEMA RAW;
 CREATE OR REPLACE NETWORK RULE FOOTBALL_API_NETWORK_RULE
     MODE = EGRESS
     TYPE = HOST_PORT
-    VALUE_LIST = ('api.football-data.org:443');
+    VALUE_LIST = ('v3.football.api-sports.io:443');
 
 -- External Access Integration
 CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION FOOTBALL_API_ACCESS
     ALLOWED_NETWORK_RULES = (FOOTBALL_API_NETWORK_RULE)
     ALLOWED_AUTHENTICATION_SECRETS = (FOOTBALL_API_KEY)
-    ENABLED = TRUE
-    COMMENT = 'Access to football-data.org API';
+    ENABLED = TRUE;
 
 -- Stored Procedure qui référence le fichier Python sur FOOTBALL_API_STAGE
 CREATE OR REPLACE PROCEDURE FETCH_FOOTBALL_DATA(COMPETITION_CODE VARCHAR)
