@@ -50,7 +50,7 @@ Streamlit-in-Snowflake
 | Feature | Description |
 |---------|-------------|
 | VARIANT Columns | Stockage JSON semi-structure |
-| Streams (CDC) | Capture des changements en temps reel |
+| Streams (CDC) | Capture des changements |
 | Dynamic Tables | Rafraichissement automatique des agregations |
 | Snowpark Python | Procedures stockees en Python |
 | External Access | Integration securisee avec APIs externes |
@@ -58,8 +58,6 @@ Streamlit-in-Snowflake
 | Tasks + DAG | Orchestration native avec dependances |
 | MERGE | Chargement incremental avec upsert |
 | Streamlit in Snowflake | Dashboard natif |
-| RBAC | Controle d'acces par roles |
-| Masking Policies | Protection des donnees sensibles |
 | Internal Stages | Stockage des fichiers Python et Streamlit |
 
 ---
@@ -97,13 +95,110 @@ Streamlit-in-Snowflake
 | Transform | STAGING.V_* | SILVER.* | MERGE (incremental) |
 | Aggregate | SILVER.* | GOLD.DT_* | Dynamic Tables (auto) |
 
-### Orchestration
+---
 
-| Task | Schedule | Description |
-|------|----------|-------------|
-| TASK_FETCH_ALL_LEAGUES | Every 6 hours | Fetch 5 leagues (60s delay each) |
-| TASK_MERGE_TO_SILVER | After FETCH | MERGE into Silver tables |
-| Dynamic Tables | Auto (30min-1h) | Refresh automatique |
+## Automatisation
+
+Le pipeline est **100% automatique** apres le deploiement initial. Aucune intervention manuelle n'est requise.
+
+### Flux de donnees automatise
+
+```
+[Toutes les 6h - CRON]
+        |
+        v
+TASK_FETCH_ALL_LEAGUES
+   - Appelle football-data.org API
+   - Recupere 5 ligues avec 60s entre chaque (rate limiting)
+   - Insere dans RAW.RAW_MATCHES, RAW_TEAMS, RAW_STANDINGS, RAW_SCORERS
+   - Duree: ~5 minutes
+        |
+        v
+TASK_MERGE_TO_SILVER (declenchee automatiquement)
+   - MERGE incremental vers SILVER.MATCHES
+   - MERGE incremental vers SILVER.STANDINGS
+   - MERGE incremental vers SILVER.TEAMS
+   - MERGE incremental vers SILVER.SCORERS
+   - Deduplication avec QUALIFY ROW_NUMBER()
+        |
+        v
+DYNAMIC TABLES (refresh automatique 30-60 min)
+   - DT_LEAGUE_STANDINGS : classements enrichis
+   - DT_TOP_SCORERS : meilleurs buteurs avec stats
+   - DT_TEAM_STATS : statistiques par equipe
+        |
+        v
+STREAMLIT DASHBOARD (lecture temps reel)
+   - Affiche les Dynamic Tables
+   - Aucun refresh manuel necessaire
+```
+
+### Composants automatises
+
+| Composant | Type | Frequence | Description |
+|-----------|------|-----------|-------------|
+| TASK_FETCH_ALL_LEAGUES | Task CRON | Toutes les 6h | `0 */6 * * * UTC` |
+| TASK_MERGE_TO_SILVER | Task DAG | Apres FETCH | Dependance `AFTER` |
+| DT_LEAGUE_STANDINGS | Dynamic Table | 30 min | `TARGET_LAG = '30 minutes'` |
+| DT_TOP_SCORERS | Dynamic Table | 30 min | `TARGET_LAG = '30 minutes'` |
+| DT_TEAM_STATS | Dynamic Table | 1 heure | `TARGET_LAG = '1 hour'` |
+| Streamlit Data | Requetes SQL | Temps reel | Lecture des DT Gold |
+
+### Gestion des Tasks
+
+```sql
+-- Verifier le statut des tasks
+SHOW TASKS IN SCHEMA COMMON;
+
+-- Voir l'historique d'execution
+SELECT *
+FROM TABLE(INFORMATION_SCHEMA.TASK_HISTORY())
+WHERE NAME LIKE 'TASK_%'
+ORDER BY SCHEDULED_TIME DESC
+LIMIT 20;
+
+-- Suspendre les tasks (maintenance)
+ALTER TASK TASK_FETCH_ALL_LEAGUES SUSPEND;
+ALTER TASK TASK_MERGE_TO_SILVER SUSPEND;
+
+-- Reprendre les tasks
+ALTER TASK TASK_MERGE_TO_SILVER RESUME;
+ALTER TASK TASK_FETCH_ALL_LEAGUES RESUME;
+
+-- Execution manuelle (test)
+EXECUTE TASK TASK_FETCH_ALL_LEAGUES;
+```
+
+### Ce qui N'EST PAS automatique
+
+| Element | Action requise |
+|---------|----------------|
+| Code Streamlit | `PUT` vers stage apres modification |
+| Procedures Python | `PUT` vers stage apres modification |
+| Schema changes | Re-executer les scripts SQL |
+
+### Surveillance
+
+Les Dynamic Tables offrent une visibilite sur les rafraichissements :
+
+```sql
+-- Statut des Dynamic Tables
+SELECT name, refresh_mode, target_lag, last_refresh_time
+FROM TABLE(INFORMATION_SCHEMA.DYNAMIC_TABLES())
+WHERE SCHEMA_NAME = 'GOLD';
+```
+
+### Orchestration DAG
+
+```
+TASK_FETCH_ALL_LEAGUES (root)
+    |
+    +---> TASK_MERGE_TO_SILVER (child)
+              |
+              +---> [Dynamic Tables auto-refresh]
+```
+
+Les tasks enfants s'executent **uniquement** si la task parent reussit.
 
 ---
 
@@ -124,8 +219,7 @@ Streamlit-in-Snowflake
 | 11 | `03_silver/02_merge.sql` | MERGE RAW vers Silver |
 | 12 | `04_gold/01_dynamic_tables.sql` | Dynamic Tables |
 | 13 | `05_tasks/01_tasks.sql` | Tasks DAG |
-| 14 | `06_security/01_rbac.sql` | RBAC + Masking |
-| 15 | `07_streamlit/01_deploy_app.sql` | Dashboard Streamlit |
+| 14 | `06_streamlit/01_deploy_app.sql` | Dashboard Streamlit |
 
 ---
 
@@ -154,8 +248,7 @@ snowgoal/
 │   ├── 03_silver/
 │   ├── 04_gold/
 │   ├── 05_tasks/
-│   ├── 06_security/
-│   └── 07_streamlit/
+│   └── 06_streamlit/
 ├── snowpark/
 │   └── procedures/
 ├── streamlit/

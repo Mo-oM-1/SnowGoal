@@ -1,7 +1,7 @@
 -- ============================================
 -- SNOWGOAL - Silver MERGE (Incremental Load)
 -- ============================================
-
+USE ROLE ACCOUNTADMIN;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA SILVER;
 

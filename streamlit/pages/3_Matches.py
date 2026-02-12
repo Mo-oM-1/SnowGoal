@@ -20,12 +20,20 @@ LEAGUE_NAMES = {
 try:
     session = get_active_session()
 
-    tab1, tab2 = st.tabs(["🔴 Recent Results", "📆 Upcoming"])
+    # League filter
+    comp_codes = ['All', 'PL', 'PD', 'BL1', 'SA', 'FL1']
+    comp_display = ['All Leagues'] + [LEAGUE_NAMES.get(c, c) for c in comp_codes[1:]]
+    selected_idx = st.selectbox("Filter by League", range(len(comp_display)), format_func=lambda x: comp_display[x])
+    selected_comp = comp_codes[selected_idx]
+
+    where_clause = f"AND COMPETITION_CODE = '{selected_comp}'" if selected_comp != 'All' else ""
+
+    tab1, tab2 = st.tabs(["Recent Results", "Upcoming"])
 
     with tab1:
         st.subheader("Recent Results")
 
-        recent_df = session.sql("""
+        recent_df = session.sql(f"""
             SELECT
                 MATCH_DATE,
                 COMPETITION_CODE,
@@ -35,20 +43,21 @@ try:
                 AWAY_TEAM_NAME,
                 RESULT_DISPLAY
             FROM GOLD.DT_RECENT_MATCHES
-            WHERE STATUS = 'FINISHED'
+            WHERE STATUS = 'FINISHED' {where_clause}
             ORDER BY MATCH_DATE DESC
             LIMIT 30
         """).to_pandas()
 
         if not recent_df.empty:
-            st.dataframe(recent_df, use_container_width=True)
+            recent_df['LEAGUE'] = recent_df['COMPETITION_CODE'].map(LEAGUE_NAMES)
+            st.dataframe(recent_df[['MATCH_DATE', 'LEAGUE', 'MATCHDAY', 'HOME_TEAM_NAME', 'SCORE_DISPLAY', 'AWAY_TEAM_NAME']], use_container_width=True)
         else:
             st.info("No recent matches found.")
 
     with tab2:
         st.subheader("Upcoming Fixtures")
 
-        upcoming_df = session.sql("""
+        upcoming_df = session.sql(f"""
             SELECT
                 MATCH_DATETIME_DISPLAY,
                 COMPETITION_CODE,
@@ -57,12 +66,14 @@ try:
                 AWAY_TEAM_NAME,
                 DAYS_UNTIL
             FROM GOLD.DT_UPCOMING_FIXTURES
+            WHERE 1=1 {where_clause}
             ORDER BY MATCH_DATE
             LIMIT 30
         """).to_pandas()
 
         if not upcoming_df.empty:
-            st.dataframe(upcoming_df, use_container_width=True)
+            upcoming_df['LEAGUE'] = upcoming_df['COMPETITION_CODE'].map(LEAGUE_NAMES)
+            st.dataframe(upcoming_df[['MATCH_DATETIME_DISPLAY', 'LEAGUE', 'MATCHDAY', 'HOME_TEAM_NAME', 'AWAY_TEAM_NAME', 'DAYS_UNTIL']], use_container_width=True)
         else:
             st.info("No upcoming fixtures found.")
 

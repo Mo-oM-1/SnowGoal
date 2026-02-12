@@ -35,11 +35,14 @@ try:
     """).to_pandas()
 
     if not teams_df.empty:
-        # Competition filter
-        comps = ['All'] + list(teams_df['COMPETITION_CODE'].unique())
-        selected_comp = st.selectbox("Filter by League", comps)
+        # Competition filter with real names
+        comp_codes = list(teams_df['COMPETITION_CODE'].unique())
+        comp_options = {LEAGUE_NAMES.get(c, c): c for c in comp_codes}
+        comp_display = ['All'] + list(comp_options.keys())
+        selected_display = st.selectbox("Filter by League", comp_display)
 
-        if selected_comp != 'All':
+        if selected_display != 'All':
+            selected_comp = comp_options[selected_display]
             teams_df = teams_df[teams_df['COMPETITION_CODE'] == selected_comp]
 
         # Team selector
