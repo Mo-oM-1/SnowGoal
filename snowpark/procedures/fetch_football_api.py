@@ -1,98 +1,76 @@
-"""
-SnowGoal - Fetch Football Data API
-Stored Procedure Snowpark Python
-
-Endpoints football-data.org (Free Tier):
-- /competitions/{code}
-- /competitions/{code}/teams
-- /competitions/{code}/matches
-- /competitions/{code}/standings
-- /competitions/{code}/scorers
-"""
-
 import snowflake.snowpark as snowpark
-from snowflake.snowpark.functions import col, lit, current_timestamp
 import requests
 import json
 from datetime import datetime
+import _snowflake
 
-# Competition codes (Top 5 leagues)
-COMPETITIONS = {
-    'PL': 'Premier League',
-    'PD': 'La Liga',
-    'BL1': 'Bundesliga',
-    'SA': 'Serie A',
-    'FL1': 'Ligue 1'
+BASE_URL = "https://v3.football.api-sports.io"
+
+LEAGUE_IDS = {
+    "PL": 39,
+    "PD": 140,
+    "BL1": 78,
+    "SA": 135,
+    "FL1": 61
 }
 
-BASE_URL = "https://api.football-data.org/v4"
 
-
-def fetch_api(endpoint: str, api_key: str) -> dict:
-    """Fetch data from football-data.org API"""
-    headers = {"X-Auth-Token": api_key}
-    response = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
+def fetch_api(endpoint, api_key):
+    headers = {"x-apisports-key": api_key}
+    url = BASE_URL + endpoint
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()
 
 
-def main(session: snowpark.Session, api_key: str, competition_code: str = 'PL') -> str:
-    """
-    Main procedure to fetch football data and insert into RAW tables.
+def escape_sql(s):
+    return s.replace("\\", "\\\\").replace("'", "''")
 
-    Args:
-        session: Snowpark session
-        api_key: football-data.org API key
-        competition_code: League code (PL, PD, BL1, SA, FL1)
 
-    Returns:
-        Status message
-    """
+def main(session: snowpark.Session, competition_code: str) -> str:
+    api_key = _snowflake.get_generic_secret_string("api_key")
     results = []
-    current_year = datetime.now().year
+    season = 2024
+
+    league_id = LEAGUE_IDS.get(competition_code)
+    if not league_id:
+        return "ERROR: Unknown competition code " + competition_code
 
     try:
-        # 1. Fetch Competition Info
-        comp_data = fetch_api(f"/competitions/{competition_code}", api_key)
-        session.sql(f"""
-            INSERT INTO SNOWGOAL_DB.RAW.RAW_COMPETITIONS (RAW_DATA, COMPETITION_CODE)
-            SELECT PARSE_JSON('{json.dumps(comp_data)}'), '{competition_code}'
-        """).collect()
-        results.append(f"Competition {competition_code}: OK")
+        # 1. League Info
+        league_data = fetch_api("/leagues?id=" + str(league_id), api_key)
+        json_str = escape_sql(json.dumps(league_data))
+        session.sql(f"INSERT INTO SNOWGOAL_DB.RAW.RAW_COMPETITIONS (RAW_DATA, COMPETITION_CODE) SELECT PARSE_JSON('{json_str}'), '{competition_code}'").collect()
+        results.append("League: OK")
 
-        # 2. Fetch Teams
-        teams_data = fetch_api(f"/competitions/{competition_code}/teams", api_key)
-        session.sql(f"""
-            INSERT INTO SNOWGOAL_DB.RAW.RAW_TEAMS (RAW_DATA, COMPETITION_CODE)
-            SELECT PARSE_JSON('{json.dumps(teams_data)}'), '{competition_code}'
-        """).collect()
-        results.append(f"Teams: {len(teams_data.get('teams', []))} loaded")
+        # 2. Teams
+        teams_data = fetch_api("/teams?league=" + str(league_id) + "&season=" + str(season), api_key)
+        json_str = escape_sql(json.dumps(teams_data))
+        session.sql(f"INSERT INTO SNOWGOAL_DB.RAW.RAW_TEAMS (RAW_DATA, COMPETITION_CODE) SELECT PARSE_JSON('{json_str}'), '{competition_code}'").collect()
+        team_count = len(teams_data.get("response", []))
+        results.append("Teams: " + str(team_count))
 
-        # 3. Fetch Matches (current season)
-        matches_data = fetch_api(f"/competitions/{competition_code}/matches", api_key)
-        session.sql(f"""
-            INSERT INTO SNOWGOAL_DB.RAW.RAW_MATCHES (RAW_DATA, COMPETITION_CODE, SEASON_YEAR)
-            SELECT PARSE_JSON('{json.dumps(matches_data)}'), '{competition_code}', {current_year}
-        """).collect()
-        results.append(f"Matches: {len(matches_data.get('matches', []))} loaded")
+        # 3. Fixtures (Matches)
+        fixtures_data = fetch_api("/fixtures?league=" + str(league_id) + "&season=" + str(season), api_key)
+        json_str = escape_sql(json.dumps(fixtures_data))
+        session.sql(f"INSERT INTO SNOWGOAL_DB.RAW.RAW_MATCHES (RAW_DATA, COMPETITION_CODE, SEASON_YEAR) SELECT PARSE_JSON('{json_str}'), '{competition_code}', {season}").collect()
+        match_count = len(fixtures_data.get("response", []))
+        results.append("Matches: " + str(match_count))
 
-        # 4. Fetch Standings
-        standings_data = fetch_api(f"/competitions/{competition_code}/standings", api_key)
-        session.sql(f"""
-            INSERT INTO SNOWGOAL_DB.RAW.RAW_STANDINGS (RAW_DATA, COMPETITION_CODE, SEASON_YEAR)
-            SELECT PARSE_JSON('{json.dumps(standings_data)}'), '{competition_code}', {current_year}
-        """).collect()
+        # 4. Standings
+        standings_data = fetch_api("/standings?league=" + str(league_id) + "&season=" + str(season), api_key)
+        json_str = escape_sql(json.dumps(standings_data))
+        session.sql(f"INSERT INTO SNOWGOAL_DB.RAW.RAW_STANDINGS (RAW_DATA, COMPETITION_CODE, SEASON_YEAR) SELECT PARSE_JSON('{json_str}'), '{competition_code}', {season}").collect()
         results.append("Standings: OK")
 
-        # 5. Fetch Top Scorers
-        scorers_data = fetch_api(f"/competitions/{competition_code}/scorers?limit=50", api_key)
-        session.sql(f"""
-            INSERT INTO SNOWGOAL_DB.RAW.RAW_SCORERS (RAW_DATA, COMPETITION_CODE, SEASON_YEAR)
-            SELECT PARSE_JSON('{json.dumps(scorers_data)}'), '{competition_code}', {current_year}
-        """).collect()
-        results.append(f"Scorers: {len(scorers_data.get('scorers', []))} loaded")
+        # 5. Top Scorers
+        scorers_data = fetch_api("/players/topscorers?league=" + str(league_id) + "&season=" + str(season), api_key)
+        json_str = escape_sql(json.dumps(scorers_data))
+        session.sql(f"INSERT INTO SNOWGOAL_DB.RAW.RAW_SCORERS (RAW_DATA, COMPETITION_CODE, SEASON_YEAR) SELECT PARSE_JSON('{json_str}'), '{competition_code}', {season}").collect()
+        scorer_count = len(scorers_data.get("response", []))
+        results.append("Scorers: " + str(scorer_count))
 
-        return f"SUCCESS - {competition_code}: " + " | ".join(results)
+        return "SUCCESS [" + competition_code + "]: " + " | ".join(results)
 
     except Exception as e:
-        return f"ERROR - {competition_code}: {str(e)}"
+        return "ERROR [" + competition_code + "]: " + str(e)
