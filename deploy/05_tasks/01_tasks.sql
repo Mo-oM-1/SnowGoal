@@ -6,69 +6,23 @@ USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 
 -- ----------------------------------------
--- ROOT TASK: Fetch data from API
--- Runs every 6 hours (API rate limit friendly)
+-- TASK 1: Fetch all leagues from API
+-- Runs every 6 hours
 -- ----------------------------------------
-CREATE OR REPLACE TASK TASK_FETCH_ALL_COMPETITIONS
+CREATE OR REPLACE TASK TASK_FETCH_ALL_LEAGUES
     WAREHOUSE = SNOWGOAL_WH_XS
     SCHEDULE = 'USING CRON 0 */6 * * * UTC'
-    COMMENT = 'Root task: Fetch data for all competitions from football-data.org'
+    COMMENT = 'Fetch data for all 5 European leagues from football-data.org'
 AS
-CALL FETCH_FOOTBALL_DATA('PL');
-
--- Note: Free tier = 10 calls/min, 5 endpoints per competition
--- For multiple leagues, we need to space out calls
+CALL FETCH_ALL_LEAGUES();
 
 -- ----------------------------------------
--- CHILD TASKS: Additional Leagues (with delay)
--- ----------------------------------------
-CREATE OR REPLACE TASK TASK_FETCH_LA_LIGA
-    WAREHOUSE = SNOWGOAL_WH_XS
-    AFTER TASK_FETCH_ALL_COMPETITIONS
-    COMMENT = 'Fetch La Liga data'
-AS
-BEGIN
-    CALL SYSTEM$WAIT(60); -- Wait 1 min to respect rate limit
-    CALL FETCH_FOOTBALL_DATA('PD');
-END;
-
-CREATE OR REPLACE TASK TASK_FETCH_BUNDESLIGA
-    WAREHOUSE = SNOWGOAL_WH_XS
-    AFTER TASK_FETCH_LA_LIGA
-    COMMENT = 'Fetch Bundesliga data'
-AS
-BEGIN
-    CALL SYSTEM$WAIT(60);
-    CALL FETCH_FOOTBALL_DATA('BL1');
-END;
-
-CREATE OR REPLACE TASK TASK_FETCH_SERIE_A
-    WAREHOUSE = SNOWGOAL_WH_XS
-    AFTER TASK_FETCH_BUNDESLIGA
-    COMMENT = 'Fetch Serie A data'
-AS
-BEGIN
-    CALL SYSTEM$WAIT(60);
-    CALL FETCH_FOOTBALL_DATA('SA');
-END;
-
-CREATE OR REPLACE TASK TASK_FETCH_LIGUE_1
-    WAREHOUSE = SNOWGOAL_WH_XS
-    AFTER TASK_FETCH_SERIE_A
-    COMMENT = 'Fetch Ligue 1 data'
-AS
-BEGIN
-    CALL SYSTEM$WAIT(60);
-    CALL FETCH_FOOTBALL_DATA('FL1');
-END;
-
--- ----------------------------------------
--- MERGE TASK: Transform to Silver
--- Runs after all fetches complete
+-- TASK 2: Merge to Silver
+-- Runs after fetch completes
 -- ----------------------------------------
 CREATE OR REPLACE TASK TASK_MERGE_TO_SILVER
     WAREHOUSE = SNOWGOAL_WH_XS
-    AFTER TASK_FETCH_LIGUE_1
+    AFTER TASK_FETCH_ALL_LEAGUES
     COMMENT = 'Merge staging data into Silver tables'
 AS
 BEGIN
@@ -243,15 +197,15 @@ BEGIN
     MERGE INTO SILVER.COMPETITIONS AS target
     USING (
         SELECT DISTINCT
-            COMPETITION_ID, COMPETITION_CODE, COMPETITION_NAME, TYPE, EMBLEM,
+            COMPETITION_CODE, COMPETITION_ID, COMPETITION_NAME, TYPE, EMBLEM,
             AREA_NAME, AREA_CODE, AREA_FLAG, CURRENT_SEASON_ID,
             SEASON_START, SEASON_END, CURRENT_MATCHDAY
         FROM STAGING.V_COMPETITIONS
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY COMPETITION_ID ORDER BY LOADED_AT DESC) = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY COMPETITION_CODE ORDER BY LOADED_AT DESC) = 1
     ) AS source
-    ON target.COMPETITION_ID = source.COMPETITION_ID
+    ON target.COMPETITION_CODE = source.COMPETITION_CODE
     WHEN MATCHED THEN UPDATE SET
-        COMPETITION_CODE = source.COMPETITION_CODE,
+        COMPETITION_ID = source.COMPETITION_ID,
         COMPETITION_NAME = source.COMPETITION_NAME,
         TYPE = source.TYPE,
         EMBLEM = source.EMBLEM,
@@ -264,11 +218,11 @@ BEGIN
         CURRENT_MATCHDAY = source.CURRENT_MATCHDAY,
         _UPDATED_AT = CURRENT_TIMESTAMP()
     WHEN NOT MATCHED THEN INSERT (
-        COMPETITION_ID, COMPETITION_CODE, COMPETITION_NAME, TYPE, EMBLEM,
+        COMPETITION_CODE, COMPETITION_ID, COMPETITION_NAME, TYPE, EMBLEM,
         AREA_NAME, AREA_CODE, AREA_FLAG, CURRENT_SEASON_ID,
         SEASON_START, SEASON_END, CURRENT_MATCHDAY
     ) VALUES (
-        source.COMPETITION_ID, source.COMPETITION_CODE, source.COMPETITION_NAME,
+        source.COMPETITION_CODE, source.COMPETITION_ID, source.COMPETITION_NAME,
         source.TYPE, source.EMBLEM, source.AREA_NAME, source.AREA_CODE,
         source.AREA_FLAG, source.CURRENT_SEASON_ID, source.SEASON_START,
         source.SEASON_END, source.CURRENT_MATCHDAY
@@ -276,21 +230,15 @@ BEGIN
 END;
 
 -- ----------------------------------------
--- Resume all tasks (enable DAG)
+-- Resume tasks (enable DAG)
 -- ----------------------------------------
 ALTER TASK TASK_MERGE_TO_SILVER RESUME;
-ALTER TASK TASK_FETCH_LIGUE_1 RESUME;
-ALTER TASK TASK_FETCH_SERIE_A RESUME;
-ALTER TASK TASK_FETCH_BUNDESLIGA RESUME;
-ALTER TASK TASK_FETCH_LA_LIGA RESUME;
-ALTER TASK TASK_FETCH_ALL_COMPETITIONS RESUME;
+ALTER TASK TASK_FETCH_ALL_LEAGUES RESUME;
 
+-- ----------------------------------------
 -- Verify DAG
+-- ----------------------------------------
 SHOW TASKS IN SCHEMA COMMON;
 
--- View task dependencies
-SELECT *
-FROM TABLE(INFORMATION_SCHEMA.TASK_DEPENDENTS(
-    TASK_NAME => 'SNOWGOAL_DB.COMMON.TASK_FETCH_ALL_COMPETITIONS',
-    RECURSIVE => TRUE
-));
+-- Manual execution for testing:
+-- EXECUTE TASK TASK_FETCH_ALL_LEAGUES;
