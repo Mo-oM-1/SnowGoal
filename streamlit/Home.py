@@ -4,6 +4,7 @@ Built 100% on Snowflake Native Features
 """
 
 import streamlit as st
+from snowflake.snowpark.context import get_active_session
 
 st.set_page_config(
     page_title="SnowGoal",
@@ -12,42 +13,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        background: linear-gradient(90deg, #1e88e5, #43a047);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        padding: 1rem 0;
-    }
-    .feature-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        margin: 0.5rem 0;
-    }
-    .stat-box {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-        border-left: 4px solid #1e88e5;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 # Header
-st.markdown('<h1 class="main-header">⚽ SnowGoal</h1>', unsafe_allow_html=True)
-st.markdown("""
-<p style="text-align: center; font-size: 1.2rem; color: #666;">
-    Football Analytics Pipeline - 100% Snowflake Native
-</p>
-""", unsafe_allow_html=True)
+st.markdown("# ⚽ SnowGoal")
+st.markdown("**Football Analytics Pipeline - 100% Snowflake Native**")
 
 st.divider()
 
@@ -86,6 +54,39 @@ with col3:
 
 st.divider()
 
+# Live stats from Snowflake
+st.markdown("### 📊 Live Data Status")
+
+try:
+    session = get_active_session()
+
+    # Get counts
+    stats = session.sql("""
+        SELECT
+            (SELECT COUNT(*) FROM SILVER.MATCHES) AS MATCHES,
+            (SELECT COUNT(*) FROM SILVER.TEAMS) AS TEAMS,
+            (SELECT COUNT(*) FROM SILVER.SCORERS) AS SCORERS,
+            (SELECT COUNT(*) FROM SILVER.COMPETITIONS) AS COMPETITIONS
+    """).collect()[0]
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("⚽ Matches", int(stats['MATCHES']))
+    with col2:
+        st.metric("🏟️ Teams", int(stats['TEAMS']))
+    with col3:
+        st.metric("🎯 Scorers", int(stats['SCORERS']))
+    with col4:
+        st.metric("🏆 Leagues", int(stats['COMPETITIONS']))
+
+    st.success("✅ Connected to Snowflake")
+
+except Exception as e:
+    st.warning("⚠️ Could not load live stats")
+    st.info(f"Error: {e}")
+
+st.divider()
+
 # Architecture diagram
 st.markdown("### 🏗️ Architecture")
 st.code("""
@@ -113,11 +114,7 @@ st.code("""
 
 # Footer
 st.divider()
-st.markdown("""
-<p style="text-align: center; color: #999; font-size: 0.9rem;">
-    Data source: football-data.org | Refresh: Every 6 hours
-</p>
-""", unsafe_allow_html=True)
+st.caption("Data source: football-data.org | Refresh: Every 6 hours")
 
 # Sidebar
 with st.sidebar:
@@ -129,7 +126,3 @@ with st.sidebar:
     - **Matches**: Results & fixtures
     - **Teams**: Club details
     """)
-
-    st.divider()
-    st.markdown("### 📊 Data Status")
-    st.info("Connect to Snowflake to see live data")
