@@ -80,7 +80,7 @@ try:
             st.divider()
 
             # Standings table
-            st.dataframe(standings_df, use_container_width=True, hide_index=True)
+            st.dataframe(standings_df, use_container_width=True)
 
             # Points chart
             st.subheader("📊 Points Distribution")

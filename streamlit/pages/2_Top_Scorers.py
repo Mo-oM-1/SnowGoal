@@ -70,7 +70,7 @@ try:
 
             # Full table
             st.subheader("📋 Full Rankings")
-            st.dataframe(scorers_df, use_container_width=True, hide_index=True)
+            st.dataframe(scorers_df, use_container_width=True)
 
         else:
             st.warning("No scorer data available.")

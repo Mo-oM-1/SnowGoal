@@ -41,7 +41,7 @@ try:
         """).to_pandas()
 
         if not recent_df.empty:
-            st.dataframe(recent_df, use_container_width=True, hide_index=True)
+            st.dataframe(recent_df, use_container_width=True)
         else:
             st.info("No recent matches found.")
 
@@ -62,7 +62,7 @@ try:
         """).to_pandas()
 
         if not upcoming_df.empty:
-            st.dataframe(upcoming_df, use_container_width=True, hide_index=True)
+            st.dataframe(upcoming_df, use_container_width=True)
         else:
             st.info("No upcoming fixtures found.")
 
