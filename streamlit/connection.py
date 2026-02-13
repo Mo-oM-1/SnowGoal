@@ -3,7 +3,29 @@ Snowflake connection helper - supports both SiS and Streamlit Cloud
 """
 
 import streamlit as st
+from datetime import datetime, timedelta
 
+def get_ttl_until_next_refresh():
+    """
+    Calculate seconds until next data refresh (2x daily: 6h and 23h).
+    Returns TTL in seconds, minimum 60 seconds.
+    """
+    now = datetime.now()
+    refresh_hours = [6, 23]
+
+    # Find next refresh time
+    for hour in refresh_hours:
+        next_refresh = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        if now < next_refresh:
+            ttl = (next_refresh - now).total_seconds()
+            return max(int(ttl), 60)
+
+    # If past 23h, next refresh is 6h tomorrow
+    next_refresh = (now + timedelta(days=1)).replace(hour=6, minute=0, second=0, microsecond=0)
+    ttl = (next_refresh - now).total_seconds()
+    return max(int(ttl), 60)
+
+@st.cache_resource
 def get_connection():
     """
     Returns a Snowflake connection that works in both environments:
@@ -48,10 +70,11 @@ def get_connection():
         )
         return conn, "cloud"
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=get_ttl_until_next_refresh())
 def run_query(query):
     """
-    Execute a query and return results as pandas DataFrame
+    Execute a query and return results as pandas DataFrame.
+    Cache expires at next scheduled refresh (2x daily: 6h and 23h).
     """
     conn, env = get_connection()
 

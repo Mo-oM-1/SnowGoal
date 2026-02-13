@@ -8,12 +8,12 @@ USE SCHEMA COMMON;
 
 -- ----------------------------------------
 -- TASK 1: Fetch all leagues from API
--- Runs every 6 hours
+-- Runs 2x daily: 6h and 23h (Europe/Paris)
 -- ----------------------------------------
 CREATE OR REPLACE TASK TASK_FETCH_ALL_LEAGUES
     WAREHOUSE = SNOWGOAL_WH_XS
-    SCHEDULE = 'USING CRON 0 */6 * * * UTC'
-    COMMENT = 'Fetch data for all 5 European leagues from football-data.org'
+    SCHEDULE = 'USING CRON 0 6,23 * * * Europe/Paris'
+    COMMENT = 'Fetch data for all 5 European leagues from football-data.org (6h + 23h)'
 AS
 CALL FETCH_ALL_LEAGUES();
 
