@@ -4,6 +4,7 @@
 *.p8
 *.pub
 rsa_key*
+keys/
 credentials.json
 secrets.toml
 
