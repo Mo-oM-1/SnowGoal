@@ -1,7 +1,7 @@
 -- ============================================
 -- SNOWGOAL - Fetch All Leagues Procedure
 -- ============================================
-USE ROLE ACCOUNTADMIN;
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 

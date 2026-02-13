@@ -2,6 +2,7 @@
 -- SNOWGOAL - Gold Dynamic Tables
 -- ============================================
 
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA GOLD;
 

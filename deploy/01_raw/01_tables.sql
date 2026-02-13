@@ -2,6 +2,7 @@
 -- SNOWGOAL - RAW Tables (VARIANT JSON)
 -- ============================================
 
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 

@@ -1,7 +1,7 @@
 -- ============================================
 -- SNOWGOAL - Stored Procedure (API Fetch)
 -- ============================================
-USE ROLE ACCOUNTADMIN;
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 

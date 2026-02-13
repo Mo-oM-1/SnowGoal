@@ -2,6 +2,7 @@
 -- SNOWGOAL - Deploy Streamlit App in Snowflake
 -- ============================================
 
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 

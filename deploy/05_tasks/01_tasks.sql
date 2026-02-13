@@ -2,6 +2,7 @@
 -- SNOWGOAL - Tasks (Orchestration DAG)
 -- ============================================
 
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 

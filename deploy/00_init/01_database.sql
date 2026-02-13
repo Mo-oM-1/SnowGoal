@@ -1,8 +1,9 @@
 -- ============================================
 -- SNOWGOAL - Database & Schemas Setup
+-- Requires: 00_role.sql executed first
 -- ============================================
 
-USE ROLE ACCOUNTADMIN;
+USE ROLE SNOWGOAL_ROLE;
 
 -- Database
 CREATE DATABASE IF NOT EXISTS SNOWGOAL_DB;

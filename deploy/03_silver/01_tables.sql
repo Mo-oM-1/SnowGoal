@@ -2,6 +2,7 @@
 -- SNOWGOAL - Silver Tables
 -- ============================================
 
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA SILVER;
 

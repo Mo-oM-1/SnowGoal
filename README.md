@@ -204,22 +204,29 @@ Les tasks enfants s'executent **uniquement** si la task parent reussit.
 
 ## Deploiement
 
-| # | Script | Description |
-|---|--------|-------------|
-| 1 | `00_init/01_database.sql` | Database, Schemas, Warehouses |
-| 2 | `00_init/02_file_formats.sql` | JSON format, Stages |
-| 3 | `01_raw/01_tables.sql` | Tables RAW (VARIANT) |
-| 4 | `01_raw/02_streams.sql` | Streams CDC |
-| 5 | Creer Secret + Upload Python | FOOTBALL_API_KEY + fichiers .py |
-| 6 | `01_raw/03_stored_procedure.sql` | Network Rule, Integration, Procedure |
-| 7 | `01_raw/04_fetch_all_procedure.sql` | Procedure FETCH_ALL_LEAGUES |
-| 8 | `CALL FETCH_ALL_LEAGUES()` | Chargement initial (5 min) |
-| 9 | `02_staging/01_views.sql` | Views FLATTEN |
-| 10 | `03_silver/01_tables.sql` | Tables Silver |
-| 11 | `03_silver/02_merge.sql` | MERGE RAW vers Silver |
-| 12 | `04_gold/01_dynamic_tables.sql` | Dynamic Tables |
-| 13 | `05_tasks/01_tasks.sql` | Tasks DAG |
-| 14 | `06_streamlit/01_deploy_app.sql` | Dashboard Streamlit |
+### Role dedie
+
+Le projet utilise un role dedie `SNOWGOAL_ROLE` au lieu de `ACCOUNTADMIN`.
+
+| # | Script | Role | Description |
+|---|--------|------|-------------|
+| 0 | `00_init/00_role.sql` | ACCOUNTADMIN | Creation du role (une seule fois) |
+| 1 | `00_init/01_database.sql` | SNOWGOAL_ROLE | Database, Schemas, Warehouses |
+| 2 | `00_init/02_file_formats.sql` | SNOWGOAL_ROLE | JSON format, Stages |
+| 3 | `01_raw/01_tables.sql` | SNOWGOAL_ROLE | Tables RAW (VARIANT) |
+| 4 | `01_raw/02_streams.sql` | SNOWGOAL_ROLE | Streams CDC |
+| 5 | Creer Secret + Upload Python | SNOWGOAL_ROLE | FOOTBALL_API_KEY + fichiers .py |
+| 6 | `01_raw/03_stored_procedure.sql` | SNOWGOAL_ROLE | Network Rule, Integration, Procedure |
+| 7 | `01_raw/04_fetch_all_procedure.sql` | SNOWGOAL_ROLE | Procedure FETCH_ALL_LEAGUES |
+| 8 | `CALL FETCH_ALL_LEAGUES()` | SNOWGOAL_ROLE | Chargement initial (5 min) |
+| 9 | `02_staging/01_views.sql` | SNOWGOAL_ROLE | Views FLATTEN |
+| 10 | `03_silver/01_tables.sql` | SNOWGOAL_ROLE | Tables Silver |
+| 11 | `03_silver/02_merge.sql` | SNOWGOAL_ROLE | MERGE RAW vers Silver |
+| 12 | `04_gold/01_dynamic_tables.sql` | SNOWGOAL_ROLE | Dynamic Tables |
+| 13 | `05_tasks/01_tasks.sql` | SNOWGOAL_ROLE | Tasks DAG |
+| 14 | `06_streamlit/01_deploy_app.sql` | SNOWGOAL_ROLE | Dashboard Streamlit |
+
+Apres l'etape 0, utiliser toujours `USE ROLE SNOWGOAL_ROLE;` pour toutes les operations.
 
 ---
 
@@ -269,6 +276,7 @@ snowgoal/
 ### Secret API
 
 ```sql
+USE ROLE SNOWGOAL_ROLE;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 
