@@ -3,7 +3,9 @@ SnowGoal - Top Scorers Page
 """
 
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
+import sys
+sys.path.append('..')
+from connection import run_query
 
 st.set_page_config(page_title="Top Scorers | SnowGoal", page_icon="🎯", layout="wide")
 
@@ -18,22 +20,20 @@ LEAGUE_NAMES = {
 }
 
 try:
-    session = get_active_session()
-
-    competitions = session.sql("""
+    competitions = run_query("""
         SELECT DISTINCT COMPETITION_CODE
         FROM GOLD.DT_TOP_SCORERS
         ORDER BY COMPETITION_CODE
-    """).collect()
+    """)
 
-    comp_codes = [row['COMPETITION_CODE'] for row in competitions]
+    comp_codes = list(competitions['COMPETITION_CODE'])
     comp_options = {LEAGUE_NAMES.get(code, code): code for code in comp_codes}
 
     if comp_options:
         selected_comp = st.selectbox("Select League", list(comp_options.keys()))
         comp_code = comp_options[selected_comp]
 
-        scorers_df = session.sql(f"""
+        scorers_df = run_query(f"""
             SELECT
                 GOALS_RANK AS RANK,
                 PLAYER_NAME,
@@ -50,7 +50,7 @@ try:
             WHERE COMPETITION_CODE = '{comp_code}'
             ORDER BY GOALS DESC
             LIMIT 20
-        """).to_pandas()
+        """)
 
         if not scorers_df.empty:
             # Top 3 podium
@@ -79,4 +79,4 @@ try:
 
 except Exception as e:
     st.error(f"Could not connect to Snowflake: {e}")
-    st.info("This dashboard requires Streamlit in Snowflake.")
+    st.info("Check your connection settings.")

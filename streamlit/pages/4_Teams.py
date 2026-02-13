@@ -3,7 +3,9 @@ SnowGoal - Teams Page
 """
 
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
+import sys
+sys.path.append('..')
+from connection import run_query
 
 st.set_page_config(page_title="Teams | SnowGoal", page_icon="🏟️", layout="wide")
 
@@ -18,9 +20,7 @@ LEAGUE_NAMES = {
 }
 
 try:
-    session = get_active_session()
-
-    teams_df = session.sql("""
+    teams_df = run_query("""
         SELECT
             TEAM_ID,
             TEAM_NAME,
@@ -32,7 +32,7 @@ try:
             COACH_NAME
         FROM SILVER.TEAMS
         ORDER BY TEAM_NAME
-    """).to_pandas()
+    """)
 
     if not teams_df.empty:
         # Competition filter with real names
@@ -75,11 +75,11 @@ try:
         # Team stats
         st.subheader("📊 Season Statistics")
 
-        stats_df = session.sql(f"""
+        stats_df = run_query(f"""
             SELECT *
             FROM GOLD.DT_TEAM_STATS
             WHERE TEAM_ID = {team_id}
-        """).to_pandas()
+        """)
 
         if not stats_df.empty:
             stats = stats_df.iloc[0]
@@ -101,4 +101,4 @@ try:
 
 except Exception as e:
     st.error(f"Could not connect to Snowflake: {e}")
-    st.info("This dashboard requires Streamlit in Snowflake.")
+    st.info("Check your connection settings.")

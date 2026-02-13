@@ -8,8 +8,9 @@ USE ROLE ACCOUNTADMIN;
 -- Create dedicated role for SnowGoal pipeline
 CREATE ROLE IF NOT EXISTS SNOWGOAL_ROLE;
 
--- Grant role to current user
-GRANT ROLE SNOWGOAL_ROLE TO USER IDENTIFIER(CURRENT_USER());
+-- Grant role to current user (replace YOUR_USERNAME with your actual Snowflake username)
+-- You can find it with: SELECT CURRENT_USER();
+GRANT ROLE SNOWGOAL_ROLE TO USER YOUR_USERNAME;
 
 -- Grant warehouse creation (needed for 01_database.sql)
 GRANT CREATE WAREHOUSE ON ACCOUNT TO ROLE SNOWGOAL_ROLE;

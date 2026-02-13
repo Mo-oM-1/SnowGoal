@@ -22,6 +22,10 @@ CREATE OR REPLACE STAGE FOOTBALL_API_STAGE
     FILE_FORMAT = JSON_FORMAT
     COMMENT = 'Internal stage for football API data';
 
+-- Internal Stage pour les fichiers Python (Stored Procedures)
+CREATE OR REPLACE STAGE RAW.PYTHON_CODE
+    COMMENT = 'Stage for Python stored procedure files';
+
 -- Verify
 SHOW FILE FORMATS IN SCHEMA COMMON;
 SHOW STAGES IN SCHEMA COMMON;

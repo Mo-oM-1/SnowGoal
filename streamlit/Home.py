@@ -4,7 +4,7 @@ Built 100% on Snowflake Native Features
 """
 
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
+from connection import run_query
 
 st.set_page_config(
     page_title="SnowGoal",
@@ -45,11 +45,11 @@ with col2:
 with col3:
     st.markdown("### 📈 Analytics")
     st.markdown("""
-    - Live Standings
-    - Top Scorers
-    - Team Stats
-    - Match Results
-    - Upcoming Fixtures
+    - 🏅 Live Standings
+    - ⚽ Top Scorers
+    - 🏟️ Team Stats
+    - 📅 Match Results
+    - 🔮 Upcoming Fixtures
     """)
 
 st.divider()
@@ -58,59 +58,29 @@ st.divider()
 st.markdown("### 📊 Live Data Status")
 
 try:
-    session = get_active_session()
-
-    # Get counts
-    stats = session.sql("""
+    stats = run_query("""
         SELECT
             (SELECT COUNT(*) FROM SILVER.MATCHES) AS MATCHES,
             (SELECT COUNT(*) FROM SILVER.TEAMS) AS TEAMS,
             (SELECT COUNT(*) FROM SILVER.SCORERS) AS SCORERS,
             (SELECT COUNT(*) FROM SILVER.COMPETITIONS) AS COMPETITIONS
-    """).collect()[0]
+    """)
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("⚽ Matches", int(stats['MATCHES']))
+        st.metric("⚽ Matches", int(stats['MATCHES'].iloc[0]))
     with col2:
-        st.metric("🏟️ Teams", int(stats['TEAMS']))
+        st.metric("🏟️ Teams", int(stats['TEAMS'].iloc[0]))
     with col3:
-        st.metric("🎯 Scorers", int(stats['SCORERS']))
+        st.metric("🎯 Scorers", int(stats['SCORERS'].iloc[0]))
     with col4:
-        st.metric("🏆 Leagues", int(stats['COMPETITIONS']))
+        st.metric("🏆 Leagues", int(stats['COMPETITIONS'].iloc[0]))
 
     st.success("✅ Connected to Snowflake")
 
 except Exception as e:
     st.warning("⚠️ Could not load live stats")
     st.info(f"Error: {e}")
-
-st.divider()
-
-# Architecture diagram
-st.markdown("### Architecture")
-st.code("""
-+---------------------------------------------------------------------+
-|                         SNOWGOAL PIPELINE                           |
-+---------------------------------------------------------------------+
-|                                                                     |
-|   +----------+     +----------+     +----------+     +----------+   |
-|   |   API    |---->|   RAW    |---->|  SILVER  |---->|   GOLD   |   |
-|   | Football |     | (VARIANT)|     |  (MERGE) |     | (DYN.TBL)|   |
-|   +----------+     +----------+     +----------+     +----------+   |
-|        |                |                                  |        |
-|        v                v                                  v        |
-|   +----------+     +----------+                      +----------+   |
-|   | Snowpark |     | Streams  |                      | Streamlit|   |
-|   |   Proc   |     |  (CDC)   |                      | Dashboard|   |
-|   +----------+     +----------+                      +----------+   |
-|                                                                     |
-|   +-------------------------------------------------------------+   |
-|   |                       TASKS (DAG)                           |   |
-|   |   FETCH_ALL_LEAGUES (6h) --> MERGE_TO_SILVER --> DYN.TABLES |   |
-|   +-------------------------------------------------------------+   |
-+---------------------------------------------------------------------+
-""", language=None)
 
 # Footer
 st.divider()

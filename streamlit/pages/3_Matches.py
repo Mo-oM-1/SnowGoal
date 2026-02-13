@@ -3,7 +3,9 @@ SnowGoal - Matches Page
 """
 
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
+import sys
+sys.path.append('..')
+from connection import run_query
 
 st.set_page_config(page_title="Matches | SnowGoal", page_icon="📅", layout="wide")
 
@@ -18,8 +20,6 @@ LEAGUE_NAMES = {
 }
 
 try:
-    session = get_active_session()
-
     # League filter
     comp_codes = ['All', 'PL', 'PD', 'BL1', 'SA', 'FL1']
     comp_display = ['All Leagues'] + [LEAGUE_NAMES.get(c, c) for c in comp_codes[1:]]
@@ -33,7 +33,7 @@ try:
     with tab1:
         st.subheader("Recent Results")
 
-        recent_df = session.sql(f"""
+        recent_df = run_query(f"""
             SELECT
                 MATCH_DATE,
                 COMPETITION_CODE,
@@ -46,7 +46,7 @@ try:
             WHERE STATUS = 'FINISHED' {where_clause}
             ORDER BY MATCH_DATE DESC
             LIMIT 30
-        """).to_pandas()
+        """)
 
         if not recent_df.empty:
             recent_df['LEAGUE'] = recent_df['COMPETITION_CODE'].map(LEAGUE_NAMES)
@@ -57,7 +57,7 @@ try:
     with tab2:
         st.subheader("Upcoming Fixtures")
 
-        upcoming_df = session.sql(f"""
+        upcoming_df = run_query(f"""
             SELECT
                 MATCH_DATETIME_DISPLAY,
                 COMPETITION_CODE,
@@ -69,7 +69,7 @@ try:
             WHERE 1=1 {where_clause}
             ORDER BY MATCH_DATE
             LIMIT 30
-        """).to_pandas()
+        """)
 
         if not upcoming_df.empty:
             upcoming_df['LEAGUE'] = upcoming_df['COMPETITION_CODE'].map(LEAGUE_NAMES)
@@ -79,4 +79,4 @@ try:
 
 except Exception as e:
     st.error(f"Could not connect to Snowflake: {e}")
-    st.info("This dashboard requires Streamlit in Snowflake.")
+    st.info("Check your connection settings.")
