@@ -8,7 +8,7 @@ def get_connection():
     """
     Returns a Snowflake connection that works in both environments:
     - Streamlit in Snowflake (SiS): uses get_active_session()
-    - Streamlit Cloud: uses snowflake.connector with secrets
+    - Streamlit Cloud: uses snowflake.connector with key-pair auth
     """
     try:
         # Try SiS first
@@ -16,12 +16,31 @@ def get_connection():
         session = get_active_session()
         return session, "sis"
     except:
-        # Fall back to Streamlit Cloud connection
+        # Fall back to Streamlit Cloud connection with key-pair
         import snowflake.connector
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.backends import default_backend
+
+        # Load private key from secrets
+        private_key_pem = st.secrets["snowflake"]["private_key"]
+
+        # Handle the private key format
+        p_key = serialization.load_pem_private_key(
+            private_key_pem.encode(),
+            password=None,
+            backend=default_backend()
+        )
+
+        pkb = p_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+
         conn = snowflake.connector.connect(
             account=st.secrets["snowflake"]["account"],
             user=st.secrets["snowflake"]["user"],
-            password=st.secrets["snowflake"]["password"],
+            private_key=pkb,
             warehouse=st.secrets["snowflake"]["warehouse"],
             database=st.secrets["snowflake"]["database"],
             schema=st.secrets["snowflake"]["schema"],

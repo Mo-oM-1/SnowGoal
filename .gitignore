@@ -1,6 +1,9 @@
 # Secrets
 .env
 *.pem
+*.p8
+*.pub
+rsa_key*
 credentials.json
 secrets.toml
 
