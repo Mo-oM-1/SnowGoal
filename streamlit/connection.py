@@ -8,7 +8,7 @@ def get_connection():
     """
     Returns a Snowflake connection that works in both environments:
     - Streamlit in Snowflake (SiS): uses get_active_session()
-    - Streamlit Cloud: uses st.connection with secrets
+    - Streamlit Cloud: uses snowflake.connector with secrets
     """
     try:
         # Try SiS first
@@ -17,9 +17,19 @@ def get_connection():
         return session, "sis"
     except:
         # Fall back to Streamlit Cloud connection
-        conn = st.connection("snowflake", type="sql")
+        import snowflake.connector
+        conn = snowflake.connector.connect(
+            account=st.secrets["snowflake"]["account"],
+            user=st.secrets["snowflake"]["user"],
+            password=st.secrets["snowflake"]["password"],
+            warehouse=st.secrets["snowflake"]["warehouse"],
+            database=st.secrets["snowflake"]["database"],
+            schema=st.secrets["snowflake"]["schema"],
+            role=st.secrets["snowflake"]["role"]
+        )
         return conn, "cloud"
 
+@st.cache_data(ttl=600)
 def run_query(query):
     """
     Execute a query and return results as pandas DataFrame
@@ -29,4 +39,10 @@ def run_query(query):
     if env == "sis":
         return conn.sql(query).to_pandas()
     else:
-        return conn.query(query)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        import pandas as pd
+        columns = [col[0] for col in cursor.description]
+        data = cursor.fetchall()
+        cursor.close()
+        return pd.DataFrame(data, columns=columns)
