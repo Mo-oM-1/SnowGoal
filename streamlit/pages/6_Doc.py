@@ -38,16 +38,11 @@ st.divider()
 st.header("🗄️ Data Model (ERD)")
 
 st.markdown("""
-### SILVER Layer - Entity Relationship Diagram
-
-📊 **[View Interactive Diagram on dbdiagram.io](https://dbdiagram.io/d)**
-
-Copy the DBML code below and paste it into [dbdiagram.io](https://dbdiagram.io) to visualize the schema.
+📊 **Copy the code below and paste it into [dbdiagram.io](https://dbdiagram.io) to visualize the interactive diagram**
 """)
 
 # DBML Code
-with st.expander("Show DBML Code"):
-    st.code("""
+st.code("""
 // SnowGoal - Data Model (SILVER Layer)
 
 Table COMPETITIONS {
