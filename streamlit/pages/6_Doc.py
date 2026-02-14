@@ -34,6 +34,120 @@ Streamlit Dashboard
 
 st.divider()
 
+# Data Model (ERD)
+st.header("🗄️ Data Model (ERD)")
+
+st.markdown("""
+### SILVER Layer - Entity Relationship Diagram
+""")
+
+# Mermaid ERD
+st.code("""
+erDiagram
+    COMPETITIONS ||--o{ MATCHES : "has"
+    COMPETITIONS ||--o{ STANDINGS : "has"
+    COMPETITIONS ||--o{ SCORERS : "has"
+    TEAMS ||--o{ MATCHES : "plays_home"
+    TEAMS ||--o{ MATCHES : "plays_away"
+    TEAMS ||--o{ STANDINGS : "has"
+    TEAMS ||--o{ SCORERS : "has"
+
+    COMPETITIONS {
+        varchar COMPETITION_CODE PK
+        int COMPETITION_ID
+        varchar COMPETITION_NAME
+        varchar TYPE
+        varchar EMBLEM
+        varchar AREA_NAME
+        varchar AREA_CODE
+        varchar AREA_FLAG
+        int CURRENT_SEASON_ID
+        date SEASON_START
+        date SEASON_END
+        int CURRENT_MATCHDAY
+    }
+
+    TEAMS {
+        int TEAM_ID PK
+        varchar COMPETITION_CODE
+        varchar TEAM_NAME
+        varchar TEAM_SHORT
+        varchar TEAM_TLA
+        varchar TEAM_CREST
+        varchar ADDRESS
+        varchar WEBSITE
+        int FOUNDED
+        varchar CLUB_COLORS
+        varchar VENUE
+        int COACH_ID
+        varchar COACH_NAME
+        varchar COACH_NATIONALITY
+    }
+
+    MATCHES {
+        int MATCH_ID PK
+        varchar COMPETITION_CODE FK
+        int SEASON_YEAR
+        timestamp MATCH_DATE
+        varchar STATUS
+        int MATCHDAY
+        varchar STAGE
+        int HOME_TEAM_ID FK
+        varchar HOME_TEAM_NAME
+        varchar HOME_TEAM_TLA
+        int AWAY_TEAM_ID FK
+        varchar AWAY_TEAM_NAME
+        varchar AWAY_TEAM_TLA
+        int HOME_SCORE
+        int AWAY_SCORE
+        int HOME_SCORE_HT
+        int AWAY_SCORE_HT
+        varchar WINNER
+        varchar REFEREE_NAME
+    }
+
+    STANDINGS {
+        int TEAM_ID PK, FK
+        varchar COMPETITION_CODE PK, FK
+        int SEASON_YEAR PK
+        int POSITION
+        varchar TEAM_NAME
+        varchar TEAM_TLA
+        varchar TEAM_CREST
+        int PLAYED
+        int WON
+        int DRAW
+        int LOST
+        int POINTS
+        int GOALS_FOR
+        int GOALS_AGAINST
+        int GOAL_DIFF
+        varchar FORM
+    }
+
+    SCORERS {
+        int PLAYER_ID PK
+        varchar COMPETITION_CODE PK, FK
+        int SEASON_YEAR PK
+        varchar PLAYER_NAME
+        varchar FIRST_NAME
+        varchar LAST_NAME
+        varchar NATIONALITY
+        varchar POSITION
+        date DATE_OF_BIRTH
+        int TEAM_ID FK
+        varchar TEAM_NAME
+        int GOALS
+        int ASSISTS
+        int PENALTIES
+        int PLAYED_MATCHES
+    }
+""", language="mermaid")
+
+st.info("💡 **Tip:** Copy the Mermaid code above and paste it into [Mermaid Live Editor](https://mermaid.live) to see the visual diagram.")
+
+st.divider()
+
 # Data Layers
 st.header("📂 Data Layers")
 
