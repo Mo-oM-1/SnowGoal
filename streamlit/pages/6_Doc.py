@@ -90,20 +90,20 @@ st.divider()
 st.header("🔄 CDC (Change Data Capture)")
 
 st.markdown("""
-### Qu'est-ce que le CDC ?
+### What is CDC?
 
-Le **Change Data Capture** capture automatiquement les modifications (INSERT, UPDATE, DELETE) dans les tables RAW grâce aux **Streams** Snowflake.
+**Change Data Capture** automatically captures modifications (INSERT, UPDATE, DELETE) in RAW tables using Snowflake **Streams**.
 
-### Pourquoi utiliser le CDC ?
-- ✅ **Performance** : Traite uniquement les changements, pas toutes les données
-- ✅ **Coûts réduits** : Moins de compute = moins de crédits
-- ✅ **Traçabilité** : Historique des modifications
+### Why use CDC?
+- ✅ **Performance**: Process only changes, not all data
+- ✅ **Cost reduction**: Less compute = fewer credits
+- ✅ **Traceability**: Track modification history
 """)
 
-st.subheader("📌 Exemples de requêtes SQL")
+st.subheader("📌 SQL Query Examples")
 
 # Example 1: Check streams exist
-with st.expander("Vérifier que les streams existent"):
+with st.expander("Check that streams exist"):
     st.code("""
 USE ROLE SNOWGOAL_ROLE;
 USE WAREHOUSE SNOWGOAL_WH_XS;
@@ -112,19 +112,19 @@ USE SCHEMA RAW;
 
 SHOW STREAMS IN SCHEMA RAW;
 
--- Résultat attendu : 4 streams (MATCHES, SCORERS, STANDINGS, TEAMS)
+-- Expected result: 4 streams (MATCHES, SCORERS, STANDINGS, TEAMS)
     """, language="sql")
 
 # Example 2: Check if stream has data
-with st.expander("Vérifier si un stream contient des données"):
+with st.expander("Check if a stream contains data"):
     st.code("""
 USE ROLE SNOWGOAL_ROLE;
 USE WAREHOUSE SNOWGOAL_WH_XS;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 
--- TRUE = Il y a des changements en attente
--- FALSE = Aucun changement (stream vide)
+-- TRUE = There are pending changes
+-- FALSE = No changes (empty stream)
 
 SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS HAS_DATA_MATCHES;
 SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_SCORERS') AS HAS_DATA_SCORERS;
@@ -133,7 +133,7 @@ SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS HAS_DATA_TEAMS;
     """, language="sql")
 
 # Example 3: See stream content
-with st.expander("Voir le contenu d'un stream"):
+with st.expander("View stream content"):
     st.code("""
 USE ROLE SNOWGOAL_ROLE;
 USE WAREHOUSE SNOWGOAL_WH_XS;
@@ -141,24 +141,24 @@ USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 
 SELECT
-    METADATA$ACTION,       -- Type de changement (INSERT, DELETE)
-    METADATA$ISUPDATE,     -- TRUE si c'est un UPDATE
-    METADATA$ROW_ID,       -- ID unique de la ligne
-    DATA,                  -- Données JSON
+    METADATA$ACTION,       -- Change type (INSERT, DELETE)
+    METADATA$ISUPDATE,     -- TRUE if it's an UPDATE
+    METADATA$ROW_ID,       -- Unique row ID
+    DATA,                  -- JSON data
     LOADED_AT
 FROM RAW.STREAM_RAW_MATCHES
 LIMIT 10;
     """, language="sql")
 
 # Example 4: Count pending changes
-with st.expander("Compter les changements en attente"):
+with st.expander("Count pending changes"):
     st.code("""
 USE ROLE SNOWGOAL_ROLE;
 USE WAREHOUSE SNOWGOAL_WH_XS;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 
--- Nombre de changements dans chaque stream
+-- Number of changes in each stream
 SELECT 'MATCHES' AS STREAM, COUNT(*) AS PENDING_CHANGES
 FROM RAW.STREAM_RAW_MATCHES
 UNION ALL
@@ -170,52 +170,52 @@ SELECT 'TEAMS', COUNT(*) FROM RAW.STREAM_RAW_TEAMS;
     """, language="sql")
 
 # Example 5: Test complete cycle
-with st.expander("Tester le cycle complet (Avant/Après MERGE)"):
-    st.markdown("**AVANT le MERGE :**")
+with st.expander("Test complete cycle (Before/After MERGE)"):
+    st.markdown("**BEFORE MERGE:**")
     st.code("""
 USE ROLE SNOWGOAL_ROLE;
 USE WAREHOUSE SNOWGOAL_WH_XS;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 
--- Vérifier l'état des streams AVANT
+-- Check streams state BEFORE
 SELECT
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS MATCHES,
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_SCORERS') AS SCORERS,
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_STANDINGS') AS STANDINGS,
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS TEAMS;
 
--- Résultat attendu : TRUE, TRUE, TRUE, TRUE
+-- Expected result: TRUE, TRUE, TRUE, TRUE
     """, language="sql")
 
-    st.markdown("**Exécuter le pipeline :**")
+    st.markdown("**Execute pipeline:**")
     st.code("""
 USE ROLE SNOWGOAL_ROLE;
 USE WAREHOUSE SNOWGOAL_WH_XS;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 
--- Déclencher manuellement le pipeline complet
+-- Manually trigger the complete pipeline
 EXECUTE TASK COMMON.TASK_FETCH_ALL_LEAGUES;
 
--- Attendre 2-3 minutes...
+-- Wait 2-3 minutes...
     """, language="sql")
 
-    st.markdown("**APRÈS le MERGE :**")
+    st.markdown("**AFTER MERGE:**")
     st.code("""
 USE ROLE SNOWGOAL_ROLE;
 USE WAREHOUSE SNOWGOAL_WH_XS;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
 
--- Vérifier l'état des streams APRÈS
+-- Check streams state AFTER
 SELECT
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS MATCHES,
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_SCORERS') AS SCORERS,
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_STANDINGS') AS STANDINGS,
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS TEAMS;
 
--- Résultat attendu : FALSE, FALSE, FALSE, FALSE (streams vides)
+-- Expected result: FALSE, FALSE, FALSE, FALSE (empty streams)
     """, language="sql")
 
 st.divider()
