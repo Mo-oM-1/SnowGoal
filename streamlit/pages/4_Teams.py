@@ -77,7 +77,7 @@ try:
 
         stats_df = run_query(f"""
             SELECT *
-            FROM GOLD.DT_TEAM_STATS
+            FROM GOLD.TEAM_STATS
             WHERE TEAM_ID = {team_id}
         """)
 

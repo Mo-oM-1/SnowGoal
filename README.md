@@ -25,7 +25,7 @@ Staging Views (FLATTEN)
 Silver Tables (MERGE)
         |
         v
-Dynamic Tables (auto-refresh)
+Gold Tables (Task-based refresh)
         |
         v
 Streamlit-in-Snowflake
@@ -51,12 +51,12 @@ Streamlit-in-Snowflake
 |---------|-------------|
 | VARIANT Columns | Stockage JSON semi-structure |
 | Streams (CDC) | Capture des changements |
-| Dynamic Tables | Rafraichissement automatique des agregations |
+| Tasks + DAG | Orchestration native avec dependances (7h, 17h, 00h) |
 | Snowpark Python | Procedures stockees en Python |
 | External Access | Integration securisee avec APIs externes |
 | Secrets Management | Stockage securise des cles API |
-| Tasks + DAG | Orchestration native avec dependances |
 | MERGE | Chargement incremental avec upsert |
+| INSERT OVERWRITE | Refresh complet des tables Gold |
 | Streamlit in Snowflake | Dashboard natif |
 | Internal Stages | Stockage des fichiers Python et Streamlit |
 
@@ -71,8 +71,8 @@ Streamlit-in-Snowflake
 | RAW | Donnees brutes JSON | RAW_MATCHES, RAW_TEAMS, RAW_STANDINGS... |
 | STAGING | Views LATERAL FLATTEN | V_MATCHES, V_TEAMS, V_STANDINGS... |
 | SILVER | Tables nettoyees | MATCHES, TEAMS, STANDINGS, SCORERS... |
-| GOLD | Dynamic Tables | DT_LEAGUE_STANDINGS, DT_TOP_SCORERS... |
-| COMMON | Objets partages | Stages, Secrets, Procedures |
+| GOLD | Tables agregees | LEAGUE_STANDINGS, TOP_SCORERS, TEAM_STATS... |
+| COMMON | Objets partages | Stages, Secrets, Procedures, Tasks |
 
 ### Tables Silver
 
@@ -93,7 +93,7 @@ Streamlit-in-Snowflake
 | Extract | football-data.org | RAW.RAW_* | Snowpark + External Access |
 | Flatten | RAW.RAW_* | STAGING.V_* | Views + LATERAL FLATTEN |
 | Transform | STAGING.V_* | SILVER.* | MERGE (incremental) |
-| Aggregate | SILVER.* | GOLD.DT_* | Dynamic Tables (auto) |
+| Aggregate | SILVER.* | GOLD.* | INSERT OVERWRITE (Tasks 3x/jour) |
 
 ---
 

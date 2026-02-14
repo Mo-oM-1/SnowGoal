@@ -22,7 +22,7 @@ LEAGUE_NAMES = {
 try:
     competitions = run_query("""
         SELECT DISTINCT COMPETITION_CODE
-        FROM GOLD.DT_TOP_SCORERS
+        FROM GOLD.TOP_SCORERS
         ORDER BY COMPETITION_CODE
     """)
 
@@ -46,7 +46,7 @@ try:
                 PLAYED_MATCHES,
                 GOAL_CONTRIBUTIONS,
                 GOALS_PER_MATCH
-            FROM GOLD.DT_TOP_SCORERS
+            FROM GOLD.TOP_SCORERS
             WHERE COMPETITION_CODE = '{comp_code}'
             ORDER BY GOALS DESC
             LIMIT 20

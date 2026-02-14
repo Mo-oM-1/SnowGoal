@@ -42,7 +42,7 @@ try:
                 SCORE_DISPLAY,
                 AWAY_TEAM_NAME,
                 RESULT_DISPLAY
-            FROM GOLD.DT_RECENT_MATCHES
+            FROM GOLD.RECENT_MATCHES
             WHERE STATUS = 'FINISHED' {where_clause}
             ORDER BY MATCH_DATE DESC
             LIMIT 30
@@ -65,7 +65,7 @@ try:
                 HOME_TEAM_NAME,
                 AWAY_TEAM_NAME,
                 DAYS_UNTIL
-            FROM GOLD.DT_UPCOMING_FIXTURES
+            FROM GOLD.UPCOMING_FIXTURES
             WHERE 1=1 {where_clause}
             ORDER BY MATCH_DATE
             LIMIT 30

@@ -24,7 +24,7 @@ try:
     # Get available competitions
     competitions = run_query("""
         SELECT DISTINCT COMPETITION_CODE
-        FROM GOLD.DT_LEAGUE_STANDINGS
+        FROM GOLD.LEAGUE_STANDINGS
         ORDER BY COMPETITION_CODE
     """)
 
@@ -56,7 +56,7 @@ try:
                 FORM,
                 POINTS_PER_GAME,
                 WIN_PERCENTAGE
-            FROM GOLD.DT_LEAGUE_STANDINGS
+            FROM GOLD.LEAGUE_STANDINGS
             WHERE COMPETITION_CODE = '{comp_code}'
             ORDER BY POSITION
         """)
