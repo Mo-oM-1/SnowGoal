@@ -35,6 +35,18 @@ Streamlit Dashboard
 
 st.divider()
 
+# Data Model (ERD)
+st.header("🗄️ Data Model (ERD)")
+
+st.markdown("""
+SILVER Layer schema showing all tables and their relationships:
+""")
+
+# Display ERD Image
+erd_path = Path(__file__).parent.parent / "assets" / "dbml_snowgoal.png"
+st.image(str(erd_path), width=600)
+
+st.divider()
 
 # Data Layers
 st.header("📂 Data Layers")
