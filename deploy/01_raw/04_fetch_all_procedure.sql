@@ -2,6 +2,7 @@
 -- SNOWGOAL - Fetch All Leagues Procedure
 -- ============================================
 USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 

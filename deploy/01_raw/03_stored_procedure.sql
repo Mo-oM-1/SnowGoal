@@ -2,6 +2,7 @@
 -- SNOWGOAL - Stored Procedure (API Fetch)
 -- ============================================
 USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
 USE DATABASE SNOWGOAL_DB;
 USE SCHEMA COMMON;
 
