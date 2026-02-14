@@ -1,12 +1,12 @@
 """
-SnowGoal - Architecture Documentation Page
+SnowGoal - Documentation Page
 """
 
 import streamlit as st
 
-st.set_page_config(page_title="Architecture | SnowGoal", page_icon="🏗️", layout="wide")
+st.set_page_config(page_title="Doc | SnowGoal", page_icon="📖", layout="wide")
 
-st.title("🏗️ Pipeline Architecture")
+st.title("📖 Documentation")
 
 # Architecture Diagram
 st.header("📊 Data Pipeline Flow")
@@ -83,6 +83,106 @@ with col3:
 
     **Refresh:** INSERT OVERWRITE
     """)
+
+st.divider()
+
+# CDC Section
+st.header("🔄 CDC (Change Data Capture)")
+
+st.markdown("""
+### Qu'est-ce que le CDC ?
+
+Le **Change Data Capture** capture automatiquement les modifications (INSERT, UPDATE, DELETE) dans les tables RAW grâce aux **Streams** Snowflake.
+
+### Pourquoi utiliser le CDC ?
+- ✅ **Performance** : Traite uniquement les changements, pas toutes les données
+- ✅ **Coûts réduits** : Moins de compute = moins de crédits
+- ✅ **Traçabilité** : Historique des modifications
+""")
+
+st.subheader("📌 Exemples de requêtes SQL")
+
+# Example 1: Check streams exist
+with st.expander("✅ Vérifier que les streams existent"):
+    st.code("""
+USE SCHEMA RAW;
+SHOW STREAMS IN SCHEMA RAW;
+
+-- Résultat attendu : 4 streams (MATCHES, SCORERS, STANDINGS, TEAMS)
+    """, language="sql")
+
+# Example 2: Check if stream has data
+with st.expander("🔍 Vérifier si un stream contient des données"):
+    st.code("""
+-- TRUE = Il y a des changements en attente
+-- FALSE = Aucun changement (stream vide)
+
+SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS HAS_DATA_MATCHES;
+SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_SCORERS') AS HAS_DATA_SCORERS;
+SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_STANDINGS') AS HAS_DATA_STANDINGS;
+SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS HAS_DATA_TEAMS;
+    """, language="sql")
+
+# Example 3: See stream content
+with st.expander("👀 Voir le contenu d'un stream"):
+    st.code("""
+SELECT
+    METADATA$ACTION,       -- Type de changement (INSERT, DELETE)
+    METADATA$ISUPDATE,     -- TRUE si c'est un UPDATE
+    METADATA$ROW_ID,       -- ID unique de la ligne
+    DATA,                  -- Données JSON
+    LOADED_AT
+FROM RAW.STREAM_RAW_MATCHES
+LIMIT 10;
+    """, language="sql")
+
+# Example 4: Count pending changes
+with st.expander("📊 Compter les changements en attente"):
+    st.code("""
+-- Nombre de changements dans chaque stream
+SELECT 'MATCHES' AS STREAM, COUNT(*) AS PENDING_CHANGES
+FROM RAW.STREAM_RAW_MATCHES
+UNION ALL
+SELECT 'SCORERS', COUNT(*) FROM RAW.STREAM_RAW_SCORERS
+UNION ALL
+SELECT 'STANDINGS', COUNT(*) FROM RAW.STREAM_RAW_STANDINGS
+UNION ALL
+SELECT 'TEAMS', COUNT(*) FROM RAW.STREAM_RAW_TEAMS;
+    """, language="sql")
+
+# Example 5: Test complete cycle
+with st.expander("🔄 Tester le cycle complet (Avant/Après MERGE)"):
+    st.markdown("**AVANT le MERGE :**")
+    st.code("""
+-- Vérifier l'état des streams AVANT
+SELECT
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS MATCHES,
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_SCORERS') AS SCORERS,
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_STANDINGS') AS STANDINGS,
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS TEAMS;
+
+-- Résultat attendu : TRUE, TRUE, TRUE, TRUE
+    """, language="sql")
+
+    st.markdown("**Exécuter le pipeline :**")
+    st.code("""
+-- Déclencher manuellement le pipeline complet
+EXECUTE TASK COMMON.TASK_FETCH_ALL_LEAGUES;
+
+-- Attendre 2-3 minutes...
+    """, language="sql")
+
+    st.markdown("**APRÈS le MERGE :**")
+    st.code("""
+-- Vérifier l'état des streams APRÈS
+SELECT
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS MATCHES,
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_SCORERS') AS SCORERS,
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_STANDINGS') AS STANDINGS,
+    SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS TEAMS;
+
+-- Résultat attendu : FALSE, FALSE, FALSE, FALSE (streams vides)
+    """, language="sql")
 
 st.divider()
 
@@ -238,4 +338,4 @@ st.markdown("""
 st.divider()
 
 # Footer
-st.caption("📖 SnowGoal Architecture Documentation | Built 100% on Snowflake Native Features")
+st.caption("📖 SnowGoal Documentation | Built 100% on Snowflake Native Features")
