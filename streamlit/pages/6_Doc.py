@@ -3,6 +3,7 @@ SnowGoal - Documentation Page
 """
 
 import streamlit as st
+from pathlib import Path
 
 st.set_page_config(page_title="Doc | SnowGoal", page_icon="📖", layout="wide")
 
@@ -68,7 +69,8 @@ SILVER Layer schema showing all tables and their relationships:
 """)
 
 # Display ERD Image
-st.image("../assets/dbml_snowgoal.png", use_container_width=True)
+erd_path = Path(__file__).parent.parent / "assets" / "dbml_snowgoal.png"
+st.image(str(erd_path), use_container_width=True)
 
 st.divider()
 
