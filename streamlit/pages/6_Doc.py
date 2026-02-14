@@ -39,112 +39,123 @@ st.header("🗄️ Data Model (ERD)")
 
 st.markdown("""
 ### SILVER Layer - Entity Relationship Diagram
+
+📊 **[View Interactive Diagram on dbdiagram.io](https://dbdiagram.io/d)**
+
+Copy the DBML code below and paste it into [dbdiagram.io](https://dbdiagram.io) to visualize the schema.
 """)
 
-# Mermaid ERD
-st.code("""
-erDiagram
-    COMPETITIONS ||--o{ MATCHES : "has"
-    COMPETITIONS ||--o{ STANDINGS : "has"
-    COMPETITIONS ||--o{ SCORERS : "has"
-    TEAMS ||--o{ MATCHES : "plays_home"
-    TEAMS ||--o{ MATCHES : "plays_away"
-    TEAMS ||--o{ STANDINGS : "has"
-    TEAMS ||--o{ SCORERS : "has"
+# DBML Code
+with st.expander("Show DBML Code"):
+    st.code("""
+// SnowGoal - Data Model (SILVER Layer)
 
-    COMPETITIONS {
-        varchar COMPETITION_CODE PK
-        int COMPETITION_ID
-        varchar COMPETITION_NAME
-        varchar TYPE
-        varchar EMBLEM
-        varchar AREA_NAME
-        varchar AREA_CODE
-        varchar AREA_FLAG
-        int CURRENT_SEASON_ID
-        date SEASON_START
-        date SEASON_END
-        int CURRENT_MATCHDAY
-    }
+Table COMPETITIONS {
+  COMPETITION_CODE varchar [pk]
+  COMPETITION_ID int
+  COMPETITION_NAME varchar
+  TYPE varchar
+  EMBLEM varchar
+  AREA_NAME varchar
+  AREA_CODE varchar
+  AREA_FLAG varchar
+  CURRENT_SEASON_ID int
+  SEASON_START date
+  SEASON_END date
+  CURRENT_MATCHDAY int
+  _LOADED_AT timestamp
+  _UPDATED_AT timestamp
+}
 
-    TEAMS {
-        int TEAM_ID PK
-        varchar COMPETITION_CODE
-        varchar TEAM_NAME
-        varchar TEAM_SHORT
-        varchar TEAM_TLA
-        varchar TEAM_CREST
-        varchar ADDRESS
-        varchar WEBSITE
-        int FOUNDED
-        varchar CLUB_COLORS
-        varchar VENUE
-        int COACH_ID
-        varchar COACH_NAME
-        varchar COACH_NATIONALITY
-    }
+Table TEAMS {
+  TEAM_ID int [pk]
+  COMPETITION_CODE varchar
+  TEAM_NAME varchar
+  TEAM_SHORT varchar
+  TEAM_TLA varchar
+  TEAM_CREST varchar
+  ADDRESS varchar
+  WEBSITE varchar
+  FOUNDED int
+  CLUB_COLORS varchar
+  VENUE varchar
+  COACH_ID int
+  COACH_NAME varchar
+  COACH_NATIONALITY varchar
+  _LOADED_AT timestamp
+  _UPDATED_AT timestamp
+}
 
-    MATCHES {
-        int MATCH_ID PK
-        varchar COMPETITION_CODE FK
-        int SEASON_YEAR
-        timestamp MATCH_DATE
-        varchar STATUS
-        int MATCHDAY
-        varchar STAGE
-        int HOME_TEAM_ID FK
-        varchar HOME_TEAM_NAME
-        varchar HOME_TEAM_TLA
-        int AWAY_TEAM_ID FK
-        varchar AWAY_TEAM_NAME
-        varchar AWAY_TEAM_TLA
-        int HOME_SCORE
-        int AWAY_SCORE
-        int HOME_SCORE_HT
-        int AWAY_SCORE_HT
-        varchar WINNER
-        varchar REFEREE_NAME
-    }
+Table MATCHES {
+  MATCH_ID int [pk]
+  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int
+  MATCH_DATE timestamp
+  STATUS varchar
+  MATCHDAY int
+  STAGE varchar
+  HOME_TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  HOME_TEAM_NAME varchar
+  HOME_TEAM_SHORT varchar
+  HOME_TEAM_TLA varchar
+  AWAY_TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  AWAY_TEAM_NAME varchar
+  AWAY_TEAM_SHORT varchar
+  AWAY_TEAM_TLA varchar
+  HOME_SCORE int
+  AWAY_SCORE int
+  HOME_SCORE_HT int
+  AWAY_SCORE_HT int
+  WINNER varchar
+  REFEREE_NAME varchar
+  LAST_UPDATED timestamp
+  _LOADED_AT timestamp
+  _UPDATED_AT timestamp
+}
 
-    STANDINGS {
-        int TEAM_ID PK, FK
-        varchar COMPETITION_CODE PK, FK
-        int SEASON_YEAR PK
-        int POSITION
-        varchar TEAM_NAME
-        varchar TEAM_TLA
-        varchar TEAM_CREST
-        int PLAYED
-        int WON
-        int DRAW
-        int LOST
-        int POINTS
-        int GOALS_FOR
-        int GOALS_AGAINST
-        int GOAL_DIFF
-        varchar FORM
-    }
+Table STANDINGS {
+  TEAM_ID int [pk, ref: > TEAMS.TEAM_ID]
+  COMPETITION_CODE varchar [pk, ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int [pk]
+  POSITION int
+  TEAM_NAME varchar
+  TEAM_SHORT varchar
+  TEAM_TLA varchar
+  TEAM_CREST varchar
+  PLAYED int
+  WON int
+  DRAW int
+  LOST int
+  POINTS int
+  GOALS_FOR int
+  GOALS_AGAINST int
+  GOAL_DIFF int
+  FORM varchar
+  _LOADED_AT timestamp
+  _UPDATED_AT timestamp
+}
 
-    SCORERS {
-        int PLAYER_ID PK
-        varchar COMPETITION_CODE PK, FK
-        int SEASON_YEAR PK
-        varchar PLAYER_NAME
-        varchar FIRST_NAME
-        varchar LAST_NAME
-        varchar NATIONALITY
-        varchar POSITION
-        date DATE_OF_BIRTH
-        int TEAM_ID FK
-        varchar TEAM_NAME
-        int GOALS
-        int ASSISTS
-        int PENALTIES
-        int PLAYED_MATCHES
-    }
-""", language="mermaid")
-
-st.info("💡 **Tip:** Copy the Mermaid code above and paste it into [Mermaid Live Editor](https://mermaid.live) to see the visual diagram.")
+Table SCORERS {
+  PLAYER_ID int [pk]
+  COMPETITION_CODE varchar [pk, ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int [pk]
+  PLAYER_NAME varchar
+  FIRST_NAME varchar
+  LAST_NAME varchar
+  NATIONALITY varchar
+  POSITION varchar
+  DATE_OF_BIRTH date
+  TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  TEAM_NAME varchar
+  TEAM_SHORT varchar
+  GOALS int
+  ASSISTS int
+  PENALTIES int
+  PLAYED_MATCHES int
+  _LOADED_AT timestamp
+  _UPDATED_AT timestamp
+}
+    """, language="sql")
 
 st.divider()
 
