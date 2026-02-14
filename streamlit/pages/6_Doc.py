@@ -35,44 +35,6 @@ Streamlit Dashboard
 
 st.divider()
 
-# Data Model (ERD)
-st.header("🗄️ Data Model (ERD)")
-
-st.markdown("""
-### Export Schema DDL from Snowflake
-
-Use `GET_DDL()` to export complete schema definitions:
-""")
-
-st.code("""
-USE ROLE SNOWGOAL_ROLE;
-USE WAREHOUSE SNOWGOAL_WH_XS;
-USE DATABASE SNOWGOAL_DB;
-
--- Export entire SILVER schema DDL
-SELECT GET_DDL('schema', 'SNOWGOAL_DB.SILVER', true);
-
--- Or export individual tables
-SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.COMPETITIONS');
-SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.TEAMS');
-SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.MATCHES');
-SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.STANDINGS');
-SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.SCORERS');
-""", language="sql")
-
-st.markdown("""
----
-
-### Entity Relationship Diagram
-
-SILVER Layer schema showing all tables and their relationships:
-""")
-
-# Display ERD Image
-erd_path = Path(__file__).parent.parent / "assets" / "dbml_snowgoal.png"
-st.image(str(erd_path), use_container_width=True)
-
-st.divider()
 
 # Data Layers
 st.header("📂 Data Layers")
@@ -273,7 +235,7 @@ st.markdown("""
 
 # Display Task Graph
 task_graph_path = Path(__file__).parent.parent / "assets" / "task_graph_snowgoal.png"
-st.image(str(task_graph_path), use_container_width=True)
+st.image(str(task_graph_path), width=600)
 
 st.divider()
 
