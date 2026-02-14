@@ -62,121 +62,13 @@ SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.SCORERS');
 st.markdown("""
 ---
 
-### Entity Relationship Diagram (DBML)
+### Entity Relationship Diagram
 
-📊 **Copy the code below and paste it into [dbdiagram.io](https://dbdiagram.io) to visualize the interactive diagram**
+SILVER Layer schema showing all tables and their relationships:
 """)
 
-# DBML Code
-st.code("""
-// SnowGoal - Data Model (SILVER Layer)
-
-Table COMPETITIONS {
-  COMPETITION_CODE varchar [pk]
-  COMPETITION_ID int
-  COMPETITION_NAME varchar
-  TYPE varchar
-  EMBLEM varchar
-  AREA_NAME varchar
-  AREA_CODE varchar
-  AREA_FLAG varchar
-  CURRENT_SEASON_ID int
-  SEASON_START date
-  SEASON_END date
-  CURRENT_MATCHDAY int
-  _LOADED_AT timestamp
-  _UPDATED_AT timestamp
-}
-
-Table TEAMS {
-  TEAM_ID int [pk]
-  COMPETITION_CODE varchar
-  TEAM_NAME varchar
-  TEAM_SHORT varchar
-  TEAM_TLA varchar
-  TEAM_CREST varchar
-  ADDRESS varchar
-  WEBSITE varchar
-  FOUNDED int
-  CLUB_COLORS varchar
-  VENUE varchar
-  COACH_ID int
-  COACH_NAME varchar
-  COACH_NATIONALITY varchar
-  _LOADED_AT timestamp
-  _UPDATED_AT timestamp
-}
-
-Table MATCHES {
-  MATCH_ID int [pk]
-  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
-  SEASON_YEAR int
-  MATCH_DATE timestamp
-  STATUS varchar
-  MATCHDAY int
-  STAGE varchar
-  HOME_TEAM_ID int [ref: > TEAMS.TEAM_ID]
-  HOME_TEAM_NAME varchar
-  HOME_TEAM_SHORT varchar
-  HOME_TEAM_TLA varchar
-  AWAY_TEAM_ID int [ref: > TEAMS.TEAM_ID]
-  AWAY_TEAM_NAME varchar
-  AWAY_TEAM_SHORT varchar
-  AWAY_TEAM_TLA varchar
-  HOME_SCORE int
-  AWAY_SCORE int
-  HOME_SCORE_HT int
-  AWAY_SCORE_HT int
-  WINNER varchar
-  REFEREE_NAME varchar
-  LAST_UPDATED timestamp
-  _LOADED_AT timestamp
-  _UPDATED_AT timestamp
-}
-
-Table STANDINGS {
-  TEAM_ID int [pk, ref: > TEAMS.TEAM_ID]
-  COMPETITION_CODE varchar [pk, ref: > COMPETITIONS.COMPETITION_CODE]
-  SEASON_YEAR int [pk]
-  POSITION int
-  TEAM_NAME varchar
-  TEAM_SHORT varchar
-  TEAM_TLA varchar
-  TEAM_CREST varchar
-  PLAYED int
-  WON int
-  DRAW int
-  LOST int
-  POINTS int
-  GOALS_FOR int
-  GOALS_AGAINST int
-  GOAL_DIFF int
-  FORM varchar
-  _LOADED_AT timestamp
-  _UPDATED_AT timestamp
-}
-
-Table SCORERS {
-  PLAYER_ID int [pk]
-  COMPETITION_CODE varchar [pk, ref: > COMPETITIONS.COMPETITION_CODE]
-  SEASON_YEAR int [pk]
-  PLAYER_NAME varchar
-  FIRST_NAME varchar
-  LAST_NAME varchar
-  NATIONALITY varchar
-  POSITION varchar
-  DATE_OF_BIRTH date
-  TEAM_ID int [ref: > TEAMS.TEAM_ID]
-  TEAM_NAME varchar
-  TEAM_SHORT varchar
-  GOALS int
-  ASSISTS int
-  PENALTIES int
-  PLAYED_MATCHES int
-  _LOADED_AT timestamp
-  _UPDATED_AT timestamp
-}
-    """, language="sql")
+# Display ERD Image
+st.image("assets/dbml_snowgoal.png", use_container_width=True)
 
 st.divider()
 
