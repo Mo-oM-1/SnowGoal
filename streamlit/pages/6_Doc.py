@@ -68,7 +68,7 @@ SILVER Layer schema showing all tables and their relationships:
 """)
 
 # Display ERD Image
-st.image("assets/dbml_snowgoal.png", use_container_width=True)
+st.image("../assets/dbml_snowgoal.png", use_container_width=True)
 
 st.divider()
 
