@@ -44,7 +44,7 @@ SILVER Layer schema showing all tables and their relationships:
 
 # Display ERD Image
 erd_path = Path(__file__).parent.parent / "assets" / "dbml_snowgoal.png"
-st.image(str(erd_path), width=600)
+st.image(str(erd_path), width=900)
 
 st.divider()
 
@@ -247,7 +247,7 @@ st.markdown("""
 
 # Display Task Graph
 task_graph_path = Path(__file__).parent.parent / "assets" / "task_graph_snowgoal.png"
-st.image(str(task_graph_path), width=600)
+st.image(str(task_graph_path), width=900)
 
 st.divider()
 
