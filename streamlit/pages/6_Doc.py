@@ -266,33 +266,14 @@ st.header("🔄 Task Orchestration (DAG)")
 st.markdown("""
 ### Execution Flow
 
-```
-TASK_FETCH_ALL_LEAGUES (Root Task)
-    ↓
-    Schedule: CRON 0 7,17,0 * * * Europe/Paris
-    Action: Call FETCH_ALL_LEAGUES() procedure
-
-    ↓
-
-TASK_MERGE_TO_SILVER
-    ↓
-    Trigger: AFTER TASK_FETCH_ALL_LEAGUES
-    Action: MERGE RAW → SILVER for all tables
-
-    ↓
-
-5 Parallel Tasks (AFTER TASK_MERGE_TO_SILVER):
-    ├── TASK_REFRESH_LEAGUE_STANDINGS
-    ├── TASK_REFRESH_TOP_SCORERS
-    ├── TASK_REFRESH_TEAM_STATS
-    ├── TASK_REFRESH_RECENT_MATCHES
-    └── TASK_REFRESH_UPCOMING_FIXTURES
-```
-
 **Total Tasks:** 7
 **Warehouse:** SNOWGOAL_WH_XS (auto-suspend: 60s)
 **Refresh Frequency:** 3x daily (7h, 17h, 00h)
 """)
+
+# Display Task Graph
+task_graph_path = Path(__file__).parent.parent / "assets" / "task_graph_snowgoal.png"
+st.image(str(task_graph_path), use_container_width=True)
 
 st.divider()
 
