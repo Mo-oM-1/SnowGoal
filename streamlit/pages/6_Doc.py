@@ -38,6 +38,32 @@ st.divider()
 st.header("🗄️ Data Model (ERD)")
 
 st.markdown("""
+### Export Schema DDL from Snowflake
+
+Use `GET_DDL()` to export complete schema definitions:
+""")
+
+st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
+
+-- Export entire SILVER schema DDL
+SELECT GET_DDL('schema', 'SNOWGOAL_DB.SILVER', true);
+
+-- Or export individual tables
+SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.COMPETITIONS');
+SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.TEAMS');
+SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.MATCHES');
+SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.STANDINGS');
+SELECT GET_DDL('table', 'SNOWGOAL_DB.SILVER.SCORERS');
+""", language="sql")
+
+st.markdown("""
+---
+
+### Entity Relationship Diagram (DBML)
+
 📊 **Copy the code below and paste it into [dbdiagram.io](https://dbdiagram.io) to visualize the interactive diagram**
 """)
 
