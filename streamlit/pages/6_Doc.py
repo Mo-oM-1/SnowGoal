@@ -103,17 +103,26 @@ Le **Change Data Capture** capture automatiquement les modifications (INSERT, UP
 st.subheader("📌 Exemples de requêtes SQL")
 
 # Example 1: Check streams exist
-with st.expander("✅ Vérifier que les streams existent"):
+with st.expander("Vérifier que les streams existent"):
     st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
 USE SCHEMA RAW;
+
 SHOW STREAMS IN SCHEMA RAW;
 
 -- Résultat attendu : 4 streams (MATCHES, SCORERS, STANDINGS, TEAMS)
     """, language="sql")
 
 # Example 2: Check if stream has data
-with st.expander("🔍 Vérifier si un stream contient des données"):
+with st.expander("Vérifier si un stream contient des données"):
     st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
+USE SCHEMA RAW;
+
 -- TRUE = Il y a des changements en attente
 -- FALSE = Aucun changement (stream vide)
 
@@ -124,8 +133,13 @@ SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS HAS_DATA_TEAMS;
     """, language="sql")
 
 # Example 3: See stream content
-with st.expander("👀 Voir le contenu d'un stream"):
+with st.expander("Voir le contenu d'un stream"):
     st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
+USE SCHEMA RAW;
+
 SELECT
     METADATA$ACTION,       -- Type de changement (INSERT, DELETE)
     METADATA$ISUPDATE,     -- TRUE si c'est un UPDATE
@@ -137,8 +151,13 @@ LIMIT 10;
     """, language="sql")
 
 # Example 4: Count pending changes
-with st.expander("📊 Compter les changements en attente"):
+with st.expander("Compter les changements en attente"):
     st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
+USE SCHEMA RAW;
+
 -- Nombre de changements dans chaque stream
 SELECT 'MATCHES' AS STREAM, COUNT(*) AS PENDING_CHANGES
 FROM RAW.STREAM_RAW_MATCHES
@@ -151,9 +170,14 @@ SELECT 'TEAMS', COUNT(*) FROM RAW.STREAM_RAW_TEAMS;
     """, language="sql")
 
 # Example 5: Test complete cycle
-with st.expander("🔄 Tester le cycle complet (Avant/Après MERGE)"):
+with st.expander("Tester le cycle complet (Avant/Après MERGE)"):
     st.markdown("**AVANT le MERGE :**")
     st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
+USE SCHEMA RAW;
+
 -- Vérifier l'état des streams AVANT
 SELECT
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS MATCHES,
@@ -166,6 +190,11 @@ SELECT
 
     st.markdown("**Exécuter le pipeline :**")
     st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
+USE SCHEMA COMMON;
+
 -- Déclencher manuellement le pipeline complet
 EXECUTE TASK COMMON.TASK_FETCH_ALL_LEAGUES;
 
@@ -174,6 +203,11 @@ EXECUTE TASK COMMON.TASK_FETCH_ALL_LEAGUES;
 
     st.markdown("**APRÈS le MERGE :**")
     st.code("""
+USE ROLE SNOWGOAL_ROLE;
+USE WAREHOUSE SNOWGOAL_WH_XS;
+USE DATABASE SNOWGOAL_DB;
+USE SCHEMA RAW;
+
 -- Vérifier l'état des streams APRÈS
 SELECT
     SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS MATCHES,
