@@ -35,10 +35,10 @@ with col1:
 with col2:
     st.markdown("### ⚡ Snowflake Features")
     st.markdown("""
-    - 📊 Dynamic Tables
     - 🔄 Streams & Tasks
     - 🐍 Snowpark Python
     - 🔐 External Access
+    - 📊 Orchestrated DAG
     - 📈 Native Streamlit
     """)
 
@@ -84,7 +84,7 @@ except Exception as e:
 
 # Footer
 st.divider()
-st.caption("Data source: football-data.org | Refresh: Every 6 hours")
+st.caption("Data source: football-data.org | Refresh: 3x daily (7h, 17h, 00h)")
 
 # Sidebar
 with st.sidebar:
