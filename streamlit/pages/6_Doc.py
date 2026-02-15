@@ -240,8 +240,13 @@ st.header("🔄 Task Orchestration (DAG)")
 st.markdown("""
 ### Execution Flow
 
-**Total Tasks :** 7
+**Total Tasks:** 7
 **Refresh Frequency:** 3x daily (7h, 17h, 00h)
+
+The CRON schedule is optimized for European football match times:
+- **7h (morning):** Captures overnight results and lineup updates
+- **17h (afternoon):** Pre-match data before evening fixtures (most matches start 18h-21h)
+- **00h (midnight):** Post-match results and final statistics
 """)
 
 # Display Task Graph
