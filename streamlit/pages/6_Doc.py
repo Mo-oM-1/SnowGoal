@@ -319,25 +319,19 @@ st.divider()
 st.header("💰 Cost Optimization")
 
 st.markdown("""
-### Strategy
-
-**Before optimization:**
-- Dynamic Tables with `TARGET_LAG = '1 hour'`
-- Refreshed 24x per day
-- **~6 credits/day** ❌
-
-**After optimization:**
-- Standard tables + Task-based refresh
-- Controlled refresh 3x per day
-- **< 0.1 credits/day** ✅
-
 ### Key Optimizations
 
 1. **Warehouse auto-suspend**: 60 seconds
-2. **Controlled refresh**: Only when new data arrives
+2. **Controlled refresh**: Only when new data arrives (3x per day)
 3. **Parallel execution**: GOLD tasks run simultaneously
 4. **Incremental MERGE**: Only process changed records in SILVER
 5. **INSERT OVERWRITE**: Fast full refresh for GOLD (small tables)
+
+### Cost Efficiency
+
+- Task-based orchestration with controlled refresh schedule
+- XS warehouse with 60s auto-suspend
+- **< 0.1 credits/day** ✅
 """)
 
 st.divider()
