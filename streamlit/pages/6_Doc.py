@@ -20,7 +20,7 @@ football-data.org API
 RAW Layer (VARIANT JSON)
         |
         ↓ (Streams CDC)
-STAGING Views (LATERAL FLATTEN)
+STAGING Views (reads from Streams + LATERAL FLATTEN)
         |
         ↓ (MERGE incremental)
 SILVER Tables (Clean Data)
