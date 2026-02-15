@@ -79,13 +79,13 @@ try:
     comebacks = run_query("""
         SELECT
             COUNT(*) as total_matches,
-            SUM(CASE WHEN (HALF_TIME_HOME < HALF_TIME_AWAY AND WINNER = 'HOME_TEAM')
-                       OR (HALF_TIME_HOME > HALF_TIME_AWAY AND WINNER = 'AWAY_TEAM')
+            SUM(CASE WHEN (HOME_SCORE_HT < AWAY_SCORE_HT AND WINNER = 'HOME_TEAM')
+                       OR (HOME_SCORE_HT > AWAY_SCORE_HT AND WINNER = 'AWAY_TEAM')
                 THEN 1 ELSE 0 END) as comebacks,
             ROUND(100.0 * comebacks / total_matches, 1) as comeback_pct
         FROM SILVER.MATCHES
         WHERE STATUS = 'FINISHED'
-          AND HALF_TIME_HOME IS NOT NULL
+          AND HOME_SCORE_HT IS NOT NULL
           AND WINNER IN ('HOME_TEAM', 'AWAY_TEAM')
     """)
 
@@ -99,13 +99,13 @@ try:
 
     half_goals = run_query("""
         SELECT
-            SUM(HALF_TIME_HOME + HALF_TIME_AWAY) as first_half_goals,
-            SUM((FULL_TIME_HOME - HALF_TIME_HOME) + (FULL_TIME_AWAY - HALF_TIME_AWAY)) as second_half_goals,
+            SUM(HOME_SCORE_HT + AWAY_SCORE_HT) as first_half_goals,
+            SUM((HOME_SCORE - HOME_SCORE_HT) + (AWAY_SCORE - AWAY_SCORE_HT)) as second_half_goals,
             ROUND(100.0 * second_half_goals / (first_half_goals + second_half_goals), 1) as second_half_pct
         FROM SILVER.MATCHES
         WHERE STATUS = 'FINISHED'
-          AND HALF_TIME_HOME IS NOT NULL
-          AND FULL_TIME_HOME IS NOT NULL
+          AND HOME_SCORE_HT IS NOT NULL
+          AND HOME_SCORE IS NOT NULL
     """)
 
     if not half_goals.empty:
