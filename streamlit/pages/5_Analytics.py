@@ -51,7 +51,7 @@ except Exception as e:
     st.stop()
 
 # Tabs for different analyses
-tab1, tab2, tab3 = st.tabs(["⏰ Time Patterns", "👨‍⚖️ Referee Stats", "🌍 Geographic Analysis"])
+tab1, tab2, tab3 = st.tabs(["Time Patterns", "Referee Stats", "Geographic Analysis"])
 
 # ============================================
 # TAB 1: Time Patterns
@@ -61,7 +61,7 @@ with tab1:
 
     try:
         # Weekend vs Midweek analysis
-        st.markdown("### 📅 Weekend vs Midweek")
+        st.markdown("### Weekend vs Midweek")
         weekend_data = run_query(f"""
             SELECT
                 CASE
@@ -94,7 +94,7 @@ with tab1:
         st.divider()
 
         # Goals by hour
-        st.markdown("### 🕐 Goals by Match Hour")
+        st.markdown("### Goals by Match Hour")
         hourly_data = run_query(f"""
             SELECT
                 MATCH_HOUR,
@@ -127,7 +127,7 @@ with tab1:
         st.divider()
 
         # Day of week breakdown
-        st.markdown("### 📆 Day of Week Analysis")
+        st.markdown("### Day of Week Analysis")
         dow_data = run_query(f"""
             SELECT
                 DAY_OF_WEEK,

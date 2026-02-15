@@ -77,7 +77,7 @@ try:
                         goals = int(player['GOALS']) if pd.notna(player['GOALS']) else 0
                         assists = int(player['ASSISTS']) if pd.notna(player['ASSISTS']) else 0
 
-                        st.markdown(f"⚽ **{goals} goals** | 🅰️ {assists} assists")
+                        st.markdown(f"**{goals} Goals** | {assists} Assists")
 
             st.divider()
 
