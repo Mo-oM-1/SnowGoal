@@ -22,7 +22,7 @@ RAW Layer (VARIANT JSON)
         ↓ (Streams CDC)
 STAGING Views (reads from Streams + LATERAL FLATTEN)
         |
-        ↓ (MERGE incremental)
+        ↓ (MERGE incremental via Tasks)
 SILVER Tables (Clean Data)
         |
         ↓ (INSERT OVERWRITE via Tasks)
@@ -316,7 +316,7 @@ st.markdown("""
    - No dependencies between them
 
 **Estimated execution time:** 50mn**
-**Rate limit 10 call per minutes
+**Rate limit 10 calls per minutes
 """)
 
 st.divider()
