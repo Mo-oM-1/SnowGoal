@@ -116,7 +116,7 @@ Streamlit-in-Snowflake
 | Extract | football-data.org | RAW.RAW_* | Snowpark + External Access |
 | Flatten | RAW.RAW_* | STAGING.V_* | Views + LATERAL FLATTEN |
 | Transform | STAGING.V_* | SILVER.* | MERGE (incremental) |
-| Aggregate | SILVER.* | GOLD.* | INSERT OVERWRITE (Tasks 3x/jour) |
+| Aggregate | SILVER.* | GOLD.* | CREATE OR REPLACE TABLE (manuel) |
 
 ---
 
@@ -132,9 +132,9 @@ Le pipeline est **100% automatique** apres le deploiement initial. Aucune interv
         v
 TASK_FETCH_ALL_LEAGUES
    - Appelle football-data.org API
-   - Recupere 5 ligues avec 60s entre chaque (rate limiting)
+   - Recupere 11 ligues avec 30s entre chaque (rate limiting)
    - Insere dans RAW.RAW_MATCHES, RAW_TEAMS, RAW_STANDINGS, RAW_SCORERS
-   - Duree: ~5 minutes
+   - Duree: ~6 minutes
         |
         v
 TASK_MERGE_TO_SILVER (declenchee automatiquement)
