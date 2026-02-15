@@ -91,12 +91,12 @@ st.caption("Season 2025-2026 | Data source: football-data.org | Refresh: 3x dail
 with st.sidebar:
     st.markdown("### 🧭 Navigation")
     st.markdown("""
-    Use the sidebar to navigate:
-    - **Insights**: Key metrics & discoveries
-    - **Standings**: League tables
-    - **Top Scorers**: Goal rankings
-    - **Matches**: Results & fixtures
-    - **Teams**: Club details
-    - **Analytics**: Advanced patterns
-    - **Doc**: Full documentation
+    Use the sidebar to navigate :
+    - **Insights** : Key metrics & discoveries
+    - **Standings** : League tables
+    - **Top Scorers** : Goal rankings
+    - **Matches** : Results & fixtures
+    - **Teams** : Club details
+    - **Analytics** : Advanced patterns
+    - **Doc** : Full documentation
     """)
