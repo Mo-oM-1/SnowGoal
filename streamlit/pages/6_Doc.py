@@ -54,7 +54,7 @@ st.header("📂 Data Layers")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("### 🔴 RAW Layer")
+    st.markdown("### :red[RAW Layer]")
     st.markdown("""
     **Format:** VARIANT (JSON)
 
@@ -69,7 +69,7 @@ with col1:
     """)
 
 with col2:
-    st.markdown("### 🟡 SILVER Layer")
+    st.markdown("### :gray[SILVER Layer]")
     st.markdown("""
     **Format:** Structured tables
 
@@ -84,7 +84,7 @@ with col2:
     """)
 
 with col3:
-    st.markdown("### 🟢 GOLD Layer")
+    st.markdown("### :orange[GOLD Layer]")
     st.markdown("""
     **Format:** Aggregations
 
