@@ -116,11 +116,139 @@ Table SCORERS {
 }
 
 // ============================================
-// GOLD LAYER - Analytics Tables
+// GOLD LAYER - Business Intelligence Tables
+// ============================================
+
+Table LEAGUE_STANDINGS {
+  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int
+  POSITION int
+  TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  TEAM_NAME varchar
+  TEAM_TLA varchar
+  TEAM_CREST varchar
+  PLAYED int
+  WON int
+  DRAW int
+  LOST int
+  POINTS int
+  GOALS_FOR int
+  GOALS_AGAINST int
+  GOAL_DIFF int
+  FORM varchar
+  POINTS_PER_GAME decimal
+  GOALS_PER_GAME decimal
+  GOALS_CONCEDED_PER_GAME decimal
+  WIN_PERCENTAGE decimal
+
+  Note: 'Classements avec métriques calculées'
+}
+
+Table TOP_SCORERS {
+  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int
+  PLAYER_ID int
+  PLAYER_NAME varchar
+  NATIONALITY varchar
+  POSITION varchar
+  DATE_OF_BIRTH date
+  AGE int
+  TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  TEAM_NAME varchar
+  TEAM_SHORT varchar
+  GOALS int
+  ASSISTS int
+  PENALTIES int
+  PLAYED_MATCHES int
+  GOAL_CONTRIBUTIONS int
+  GOALS_PER_MATCH decimal
+  CONTRIBUTIONS_PER_MATCH decimal
+  GOALS_RANK int
+  CONTRIBUTIONS_RANK int
+
+  Note: 'Top buteurs avec rankings et métriques'
+}
+
+Table TEAM_STATS {
+  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int
+  TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  TEAM_NAME varchar
+  HOME_PLAYED int
+  HOME_WINS int
+  HOME_DRAWS int
+  HOME_LOSSES int
+  HOME_GOALS_FOR int
+  HOME_GOALS_AGAINST int
+  AWAY_PLAYED int
+  AWAY_WINS int
+  AWAY_DRAWS int
+  AWAY_LOSSES int
+  AWAY_GOALS_FOR int
+  AWAY_GOALS_AGAINST int
+  TOTAL_PLAYED int
+  TOTAL_WINS int
+  TOTAL_GOALS_FOR int
+  TOTAL_GOALS_AGAINST int
+  HOME_PPG decimal
+  AWAY_PPG decimal
+
+  Note: 'Statistiques domicile/extérieur des équipes'
+}
+
+Table RECENT_MATCHES {
+  MATCH_ID int [pk, ref: > MATCHES.MATCH_ID]
+  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int
+  MATCH_DATE timestamp
+  STATUS varchar
+  MATCHDAY int
+  STAGE varchar
+  HOME_TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  HOME_TEAM_NAME varchar
+  HOME_TEAM_TLA varchar
+  AWAY_TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  AWAY_TEAM_NAME varchar
+  AWAY_TEAM_TLA varchar
+  HOME_SCORE int
+  AWAY_SCORE int
+  HOME_SCORE_HT int
+  AWAY_SCORE_HT int
+  WINNER varchar
+  REFEREE_NAME varchar
+  SCORE_DISPLAY varchar
+  RESULT_DISPLAY varchar
+  DAYS_AGO int
+
+  Note: 'Matchs récents (30 derniers jours)'
+}
+
+Table UPCOMING_FIXTURES {
+  MATCH_ID int [pk, ref: > MATCHES.MATCH_ID]
+  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
+  SEASON_YEAR int
+  MATCH_DATE timestamp
+  STATUS varchar
+  MATCHDAY int
+  HOME_TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  HOME_TEAM_NAME varchar
+  HOME_TEAM_TLA varchar
+  AWAY_TEAM_ID int [ref: > TEAMS.TEAM_ID]
+  AWAY_TEAM_NAME varchar
+  AWAY_TEAM_TLA varchar
+  HOURS_UNTIL int
+  DAYS_UNTIL int
+  MATCH_DATETIME_DISPLAY varchar
+
+  Note: 'Prochains matchs programmés'
+}
+
+// ============================================
+// GOLD LAYER - Advanced Analytics Tables
 // ============================================
 
 Table MATCH_PATTERNS {
-  COMPETITION_CODE varchar
+  COMPETITION_CODE varchar [ref: > COMPETITIONS.COMPETITION_CODE]
   DAY_OF_WEEK varchar
   MATCH_HOUR int
   TOTAL_MATCHES int
@@ -136,9 +264,9 @@ Table MATCH_PATTERNS {
 }
 
 Table REFEREE_STATS {
-  REFEREE_NAME varchar
-  REFEREE_NATIONALITY varchar
-  REFEREE_ID int
+  REFEREE_NAME varchar [note: 'Agrégé depuis MATCHES.REFEREE_NAME']
+  REFEREE_NATIONALITY varchar [note: 'Agrégé depuis MATCHES.REFEREE_NATIONALITY']
+  REFEREE_ID int [note: 'Agrégé depuis MATCHES.REFEREE_ID']
   MATCHES_REFEREED int
   COMPETITIONS int
   SEASONS int
@@ -146,12 +274,12 @@ Table REFEREE_STATS {
   EXTRA_TIME_MATCHES int
   EXTRA_TIME_PCT decimal
 
-  Note: 'Statistiques des arbitres (activité, prolongations)'
+  Note: 'Statistiques des arbitres (agrégation depuis SILVER.MATCHES)'
 }
 
 Table GEOGRAPHIC_STATS {
-  AREA_NAME varchar
-  AREA_CODE varchar
+  AREA_NAME varchar [note: 'Agrégé depuis MATCHES.AREA_NAME']
+  AREA_CODE varchar [note: 'Agrégé depuis MATCHES.AREA_CODE']
   COMPETITIONS int
   TOTAL_MATCHES int
   AVG_GOALS_PER_MATCH decimal
@@ -160,5 +288,5 @@ Table GEOGRAPHIC_STATS {
   DRAWS int
   HOME_WIN_PCT decimal
 
-  Note: 'Analyse géographique (home advantage par pays)'
+  Note: 'Analyse géographique par pays (agrégation depuis SILVER.MATCHES)'
 }

@@ -88,14 +88,17 @@ with col3:
     st.markdown("""
     **Format:** Aggregations
 
-    **Tables:**
+    **Tables (8):**
     - `LEAGUE_STANDINGS`
     - `TOP_SCORERS`
     - `TEAM_STATS`
     - `RECENT_MATCHES`
     - `UPCOMING_FIXTURES`
+    - `MATCH_PATTERNS` ⭐
+    - `REFEREE_STATS` ⭐
+    - `GEOGRAPHIC_STATS` ⭐
 
-    **Refresh:** INSERT OVERWRITE
+    **Refresh:** INSERT OVERWRITE via Tasks
     """)
 
 st.divider()
@@ -240,7 +243,7 @@ st.header("🔄 Task Orchestration (DAG)")
 st.markdown("""
 ### Execution Flow
 
-**Total Tasks:** 7
+**Total Tasks:** 10
 **Refresh Frequency:** 3x daily (7h, 17h, 00h)
 
 The CRON schedule is optimized for European football match times:
@@ -296,17 +299,20 @@ st.markdown("""
    - Inserts JSON into RAW tables
 
 2. **After step 1** - `TASK_MERGE_TO_SILVER`
+   - Calls stored procedure `SP_MERGE_TO_SILVER()`
    - MERGE operations for 5 tables:
-     - Matches
+     - Matches (with 8 new enrichment columns ⭐)
      - Standings
      - Scorers
      - Teams
      - Competitions
    - Incremental updates based on Streams CDC
 
-3. **After step 2** - **5 parallel GOLD refresh tasks**
+3. **After step 2** - **8 parallel GOLD refresh tasks**
    - All execute simultaneously using `INSERT OVERWRITE`
-   - Full refresh of aggregated tables
+   - Full refresh of aggregated tables:
+     - 5 Business Intelligence tables
+     - 3 Advanced Analytics tables (using enrichment columns)
    - No dependencies between them
 
 **Estimated execution time:** 2-3 minutes per run
