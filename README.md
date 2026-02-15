@@ -145,14 +145,17 @@ TASK_MERGE_TO_SILVER (declenchee automatiquement)
    - Deduplication avec QUALIFY ROW_NUMBER()
         |
         v
-DYNAMIC TABLES (refresh automatique 30-60 min)
-   - DT_LEAGUE_STANDINGS : classements enrichis
-   - DT_TOP_SCORERS : meilleurs buteurs avec stats
-   - DT_TEAM_STATS : statistiques par equipe
+TABLES GOLD (tables normales)
+   - LEAGUE_STANDINGS : classements enrichis
+   - TOP_SCORERS : meilleurs buteurs avec stats
+   - TEAM_STATS : statistiques par equipe
+   - MATCH_PATTERNS : patterns temporels
+   - REFEREE_STATS : stats arbitres
+   - GEOGRAPHIC_STATS : analyse geographique
         |
         v
 STREAMLIT DASHBOARD (lecture temps reel)
-   - Affiche les Dynamic Tables
+   - Affiche les tables GOLD
    - Aucun refresh manuel necessaire
 ```
 
@@ -162,10 +165,8 @@ STREAMLIT DASHBOARD (lecture temps reel)
 |-----------|------|-----------|-------------|
 | TASK_FETCH_ALL_LEAGUES | Task CRON | Toutes les 6h | `0 */6 * * * UTC` |
 | TASK_MERGE_TO_SILVER | Task DAG | Apres FETCH | Dependance `AFTER` |
-| DT_LEAGUE_STANDINGS | Dynamic Table | 30 min | `TARGET_LAG = '30 minutes'` |
-| DT_TOP_SCORERS | Dynamic Table | 30 min | `TARGET_LAG = '30 minutes'` |
-| DT_TEAM_STATS | Dynamic Table | 1 heure | `TARGET_LAG = '1 hour'` |
-| Streamlit Data | Requetes SQL | Temps reel | Lecture des DT Gold |
+| Tables GOLD | Tables normales | - | `CREATE OR REPLACE TABLE` |
+| Streamlit Data | Requetes SQL | Temps reel | Lecture des tables GOLD |
 
 ### Gestion des Tasks
 
@@ -202,13 +203,21 @@ EXECUTE TASK TASK_FETCH_ALL_LEAGUES;
 
 ### Surveillance
 
-Les Dynamic Tables offrent une visibilite sur les rafraichissements :
+Verification des tables GOLD :
 
 ```sql
--- Statut des Dynamic Tables
-SELECT name, refresh_mode, target_lag, last_refresh_time
-FROM TABLE(INFORMATION_SCHEMA.DYNAMIC_TABLES())
-WHERE SCHEMA_NAME = 'GOLD';
+-- Verifier le contenu des tables GOLD
+SELECT 'LEAGUE_STANDINGS' AS TABLE_NAME, COUNT(*) AS ROW_COUNT FROM GOLD.LEAGUE_STANDINGS
+UNION ALL
+SELECT 'TOP_SCORERS', COUNT(*) FROM GOLD.TOP_SCORERS
+UNION ALL
+SELECT 'TEAM_STATS', COUNT(*) FROM GOLD.TEAM_STATS
+UNION ALL
+SELECT 'MATCH_PATTERNS', COUNT(*) FROM GOLD.MATCH_PATTERNS
+UNION ALL
+SELECT 'REFEREE_STATS', COUNT(*) FROM GOLD.REFEREE_STATS
+UNION ALL
+SELECT 'GEOGRAPHIC_STATS', COUNT(*) FROM GOLD.GEOGRAPHIC_STATS;
 ```
 
 ### Orchestration DAG
@@ -218,7 +227,7 @@ TASK_FETCH_ALL_LEAGUES (root)
     |
     +---> TASK_MERGE_TO_SILVER (child)
               |
-              +---> [Dynamic Tables auto-refresh]
+              +---> [Tables GOLD creees manuellement]
 ```
 
 Les tasks enfants s'executent **uniquement** si la task parent reussit.
@@ -245,7 +254,7 @@ Le projet utilise un role dedie `SNOWGOAL_ROLE` au lieu de `ACCOUNTADMIN`.
 | 9 | `02_staging/01_views.sql` | SNOWGOAL_ROLE | Views FLATTEN (+ 8 colonnes enrichies) |
 | 10 | `03_silver/01_tables.sql` | SNOWGOAL_ROLE | Tables Silver (MATCHES enrichie) |
 | 11 | `03_silver/02_merge.sql` | SNOWGOAL_ROLE | MERGE RAW vers Silver (+ nouvelles colonnes) |
-| 12 | `04_gold/01_dynamic_tables.sql` | SNOWGOAL_ROLE | Dynamic Tables |
+| 12 | `04_gold/01_tables.sql` | SNOWGOAL_ROLE | Tables GOLD principales |
 | 13 | `04_gold/02_match_analytics.sql` | SNOWGOAL_ROLE | **Tables Analytics (NOUVEAU)** |
 | 14 | `05_tasks/01_tasks.sql` | SNOWGOAL_ROLE | Tasks DAG |
 | 15 | `06_streamlit/01_deploy_app.sql` | SNOWGOAL_ROLE | Dashboard Streamlit (+ Analytics page) |
