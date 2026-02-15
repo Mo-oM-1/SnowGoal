@@ -321,14 +321,26 @@ st.header("💰 Cost Optimization")
 st.markdown("""
 ### Key Optimizations
 
-1. **Warehouse auto-suspend**: 60 seconds
-2. **Controlled refresh**: Only when new data arrives (3x per day)
-3. **Parallel execution**: GOLD tasks run simultaneously
-4. **Incremental MERGE**: Only process changed records in SILVER
-5. **INSERT OVERWRITE**: Fast full refresh for GOLD (small tables)
+1. **Streams (CDC) - Major Cost Saver** 🎯
+   - **Without Streams**: MERGE would scan all 1,782+ matches on every refresh → high compute cost
+   - **With Streams**: Only process changed records (e.g., 10-50 updated matches) → 95%+ cost reduction
+   - Streams capture incremental changes, MERGE reads only new/modified rows
+
+2. **Warehouse auto-suspend**: 60 seconds
+   - Minimizes idle compute costs
+
+3. **Controlled refresh**: 3x per day (7h, 17h, 00h)
+   - Aligned with match schedules, no unnecessary processing
+
+4. **Parallel execution**: GOLD tasks run simultaneously
+   - Reduces total execution time
+
+5. **XS Warehouse**: Smallest size for this workload
+   - Cost-effective for small data volumes
 
 ### Cost Efficiency
 
+- **Streams (CDC)** = Incremental processing instead of full scans
 - Task-based orchestration with controlled refresh schedule
 - XS warehouse with 60s auto-suspend
 - **< 0.1 credits/day** ✅
@@ -350,8 +362,8 @@ st.markdown("""
 ### API Security
 
 - **External Access Integration**
-  - Allowed network rule: `football-data.org`
-  - Secret: API key stored in Snowflake
+  - Allowed network rule : `football-data.org`
+  - Secret : API key stored in Snowflake
   - No credentials in code
 
 ### Best Practices
