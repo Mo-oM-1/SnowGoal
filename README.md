@@ -240,13 +240,13 @@ Le projet utilise un role dedie `SNOWGOAL_ROLE` au lieu de `ACCOUNTADMIN`.
 | 4 | `01_raw/02_streams.sql` | SNOWGOAL_ROLE | Streams CDC |
 | 5 | Creer Secret + Upload Python | SNOWGOAL_ROLE | FOOTBALL_API_KEY + fichiers .py |
 | 6 | `01_raw/03_stored_procedure.sql` | SNOWGOAL_ROLE | Network Rule, Integration, Procedure |
-| 7 | `01_raw/04_fetch_all_procedure.sql` | SNOWGOAL_ROLE | Procedure FETCH_ALL_LEAGUES (11 ligues) |
+| 7 | `01_raw/03_fetch_all_procedure.sql` | SNOWGOAL_ROLE | Procedure FETCH_ALL_LEAGUES (11 ligues) |
 | 8 | `CALL FETCH_ALL_LEAGUES()` | SNOWGOAL_ROLE | Chargement initial (~6 min, 30s entre ligues) |
 | 9 | `02_staging/01_views.sql` | SNOWGOAL_ROLE | Views FLATTEN (+ 8 colonnes enrichies) |
 | 10 | `03_silver/01_tables.sql` | SNOWGOAL_ROLE | Tables Silver (MATCHES enrichie) |
 | 11 | `03_silver/02_merge.sql` | SNOWGOAL_ROLE | MERGE RAW vers Silver (+ nouvelles colonnes) |
 | 12 | `04_gold/01_dynamic_tables.sql` | SNOWGOAL_ROLE | Dynamic Tables |
-| 13 | `04_gold/06_match_analytics.sql` | SNOWGOAL_ROLE | **Tables Analytics (NOUVEAU)** |
+| 13 | `04_gold/02_match_analytics.sql` | SNOWGOAL_ROLE | **Tables Analytics (NOUVEAU)** |
 | 14 | `05_tasks/01_tasks.sql` | SNOWGOAL_ROLE | Tasks DAG |
 | 15 | `06_streamlit/01_deploy_app.sql` | SNOWGOAL_ROLE | Dashboard Streamlit (+ Analytics page) |
 
