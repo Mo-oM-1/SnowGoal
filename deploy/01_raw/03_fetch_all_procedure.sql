@@ -13,4 +13,4 @@ IMPORTS = ('@SNOWGOAL_DB.RAW.PYTHON_CODE/fetch_all_leagues.py')
 HANDLER = 'fetch_all_leagues.main'
 EXTERNAL_ACCESS_INTEGRATIONS = (FOOTBALL_API_ACCESS)
 SECRETS = ('api_key' = SNOWGOAL_DB.COMMON.FOOTBALL_API_KEY)
-COMMENT = 'Fetches data for 12 competitions with 60s delay between each';
+COMMENT = 'Fetches data for 11 competitions with 30s delay between each';

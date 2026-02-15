@@ -1,6 +1,6 @@
 """
 SnowGoal - Fetch All Leagues
-Fetches data for all 5 European leagues with rate limit handling
+Fetches data for 11 competitions (Top 5 leagues + 6 other competitions) with rate limit handling
 """
 
 import snowflake.snowpark as snowpark
