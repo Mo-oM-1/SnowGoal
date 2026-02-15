@@ -14,6 +14,7 @@ from connection import run_query
 st.set_page_config(page_title="Insights | SnowGoal", page_icon="💡", layout="wide")
 
 st.title("💡 Key Insights & Metrics")
+st.info("📅 **Season 2024-2025** | Data refreshes automatically 3x daily (7h, 17h, 00h)")
 
 # ============================================
 # Global Metrics
@@ -55,7 +56,7 @@ try:
     st.header("🔍 Data-Driven Insights")
 
     # Insight 1: Best time to score goals
-    st.subheader("⏰ When are most goals scored?")
+    st.subheader("When are most goals scored?")
 
     goals_by_hour = run_query("""
         SELECT
@@ -77,7 +78,7 @@ try:
         st.success(f"🎯 **Insight:** Matches starting at **{best_hour}:00 UTC** have the highest average goals: **{avg_goals} goals/match**")
 
     # Insight 2: Home advantage by day
-    st.subheader("🏠 Home Advantage Analysis")
+    st.subheader("Home Advantage Analysis")
 
     home_advantage = run_query("""
         SELECT
@@ -99,7 +100,7 @@ try:
         st.success(f"🏆 **Insight:** Home teams win most on **{best_day}** with **{home_pct}%** win rate")
 
     # Insight 3: Most prolific competition
-    st.subheader("⚽ Most Goals by Competition")
+    st.subheader("Most Goals by Competition")
 
     LEAGUE_NAMES = {
         'PL': 'Premier League',
@@ -133,7 +134,7 @@ try:
         st.success(f"🥇 **Insight:** **{comp_name}** has the highest scoring matches: **{top_comp['AVG_GOALS_PER_MATCH']} goals/match**")
 
     # Insight 4: Extra Time Frequency
-    st.subheader("⏱️ Extra Time Analysis")
+    st.subheader("Extra Time Analysis")
 
     extra_time_stats = run_query("""
         SELECT
@@ -160,7 +161,7 @@ try:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("⚽ Top 5 Scorers (All Competitions)")
+        st.subheader("Top 5 Scorers (All Competitions)")
         top_scorers = run_query("""
             SELECT
                 PLAYER_NAME,
@@ -177,7 +178,7 @@ try:
             st.dataframe(top_scorers, use_container_width=True, hide_index=True)
 
     with col2:
-        st.subheader("👨‍⚖️ Most Active Referees")
+        st.subheader("Most Active Referees")
         top_refs = run_query("""
             SELECT
                 REFEREE_NAME,
@@ -260,4 +261,4 @@ except Exception as e:
 st.divider()
 
 # Footer
-st.caption("💡 SnowGoal Insights | Powered by 11 competitions across Europe and Brazil")
+st.caption("💡 SnowGoal Insights | Season 2024-2025 | 11 competitions across Europe and Brazil")

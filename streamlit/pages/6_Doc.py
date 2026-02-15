@@ -301,7 +301,7 @@ st.markdown("""
 2. **After step 1** - `TASK_MERGE_TO_SILVER`
    - Calls stored procedure `SP_MERGE_TO_SILVER()`
    - MERGE operations for 5 tables:
-     - Matches (with 8 new enrichment columns ⭐)
+     - Matches
      - Standings
      - Scorers
      - Teams
@@ -315,7 +315,7 @@ st.markdown("""
      - 3 Advanced Analytics tables (using enrichment columns)
    - No dependencies between them
 
-**Estimated execution time:** 50mn
+**Estimated execution time:** 50mn**
 **Rate limit 10 call per minutes
 """)
 
@@ -350,7 +350,6 @@ st.markdown("""
 - **Streams (CDC)** = Incremental processing instead of full scans
 - Task-based orchestration with controlled refresh schedule
 - XS warehouse with 60s auto-suspend
-- **< 0.1 credits/day** ✅
 """)
 
 st.divider()
@@ -384,4 +383,4 @@ st.markdown("""
 st.divider()
 
 # Footer
-st.caption("📖 SnowGoal Documentation | Built 100% on Snowflake Native Features")
+st.caption("📖 SnowGoal Documentation | Season 2024-2025 | Built 100% on Snowflake Native Features")

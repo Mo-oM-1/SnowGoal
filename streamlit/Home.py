@@ -16,6 +16,7 @@ st.set_page_config(
 # Header
 st.markdown("# ⚽ SnowGoal")
 st.markdown("**Football Analytics Pipeline - 100% Snowflake Native**")
+st.info("📅 **Season 2024-2025** | Data refreshes automatically 3x daily")
 
 st.divider()
 
@@ -25,31 +26,31 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown("### 🏆 Leagues Covered")
     st.markdown("""
-    - 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League
-    - 🇪🇸 La Liga
-    - 🇩🇪 Bundesliga
-    - 🇮🇹 Serie A
-    - 🇫🇷 Ligue 1
+    - Premier League
+    - La Liga
+    - Bundesliga
+    - Serie A
+    - Ligue 1
     """)
 
 with col2:
     st.markdown("### ⚡ Snowflake Features")
     st.markdown("""
-    - 🔄 Streams & Tasks
-    - 🐍 Snowpark Python
-    - 🔐 External Access
-    - 📊 Orchestrated DAG
-    - 📈 Native Streamlit
+    - Streams & Tasks
+    - Snowpark Python
+    - External Access
+    - Orchestrated DAG
+    - Native Streamlit
     """)
 
 with col3:
     st.markdown("### 📈 Analytics")
     st.markdown("""
-    - 🏅 Live Standings
-    - ⚽ Top Scorers
-    - 🏟️ Team Stats
-    - 📅 Match Results
-    - 🔮 Upcoming Fixtures
+    - Live Standings
+    - Top Scorers
+    - Team Stats
+    - Match Results
+    - Upcoming Fixtures
     """)
 
 st.divider()
@@ -84,7 +85,7 @@ except Exception as e:
 
 # Footer
 st.divider()
-st.caption("Data source: football-data.org | Refresh: 3x daily (7h, 17h, 00h)")
+st.caption("Season 2024-2025 | Data source: football-data.org | Refresh: 3x daily (7h, 17h, 00h)")
 
 # Sidebar
 with st.sidebar:
