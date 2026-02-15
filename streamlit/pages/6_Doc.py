@@ -272,8 +272,8 @@ with col2:
     - **Warehouse**: SNOWGOAL_WH_XS (auto-suspend 60s)
     - **API**: football-data.org REST API
     - **Security**: External Access Integration + Secrets
-    - **Frontend**: Streamlit in Snowflake
-    - **Version Control**: Git + GitHub
+    - **Frontend**: Streamlit Cloud
+    - **Version Control**: Git/GitHub
     """)
 
 st.divider()
