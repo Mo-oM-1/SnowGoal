@@ -59,6 +59,14 @@ Table MATCHES {
   AWAY_SCORE_HT int
   WINNER varchar
   REFEREE_NAME varchar
+  REFEREE_NATIONALITY varchar [note: 'NEW: Nationalité arbitre']
+  REFEREE_ID int [note: 'NEW: ID arbitre']
+  MATCH_DURATION varchar [note: 'NEW: REGULAR/EXTRA_TIME/PENALTY']
+  AREA_NAME varchar [note: 'NEW: Nom du pays']
+  AREA_CODE varchar [note: 'NEW: Code ISO pays']
+  DAY_OF_WEEK varchar [note: 'NEW: Jour semaine (Mon-Sun)']
+  MATCH_HOUR int [note: 'NEW: Heure match UTC (0-23)']
+  CURRENT_MATCHDAY int [note: 'NEW: Journée compétition']
   LAST_UPDATED timestamp
   _LOADED_AT timestamp
   _UPDATED_AT timestamp
@@ -105,4 +113,52 @@ Table SCORERS {
   PLAYED_MATCHES int
   _LOADED_AT timestamp
   _UPDATED_AT timestamp
+}
+
+// ============================================
+// GOLD LAYER - Analytics Tables
+// ============================================
+
+Table MATCH_PATTERNS {
+  COMPETITION_CODE varchar
+  DAY_OF_WEEK varchar
+  MATCH_HOUR int
+  TOTAL_MATCHES int
+  AVG_TOTAL_GOALS decimal
+  AVG_HOME_GOALS decimal
+  AVG_AWAY_GOALS decimal
+  EXTRA_TIME_MATCHES int
+  HOME_WINS int
+  AWAY_WINS int
+  DRAWS int
+
+  Note: 'Analyse temporelle des matchs (patterns par jour/heure)'
+}
+
+Table REFEREE_STATS {
+  REFEREE_NAME varchar
+  REFEREE_NATIONALITY varchar
+  REFEREE_ID int
+  MATCHES_REFEREED int
+  COMPETITIONS int
+  SEASONS int
+  AVG_GOALS_PER_MATCH decimal
+  EXTRA_TIME_MATCHES int
+  EXTRA_TIME_PCT decimal
+
+  Note: 'Statistiques des arbitres (activité, prolongations)'
+}
+
+Table GEOGRAPHIC_STATS {
+  AREA_NAME varchar
+  AREA_CODE varchar
+  COMPETITIONS int
+  TOTAL_MATCHES int
+  AVG_GOALS_PER_MATCH decimal
+  HOME_WINS int
+  AWAY_WINS int
+  DRAWS int
+  HOME_WIN_PCT decimal
+
+  Note: 'Analyse géographique (home advantage par pays)'
 }

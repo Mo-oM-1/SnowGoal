@@ -1,6 +1,6 @@
 # SnowGoal
 
-**Pipeline d'analyse football 100% Snowflake natif** — Top 5 ligues europeennes
+**Pipeline d'analyse football 100% Snowflake natif** — 11 compétitions internationales
 
 ---
 
@@ -33,8 +33,9 @@ Streamlit-in-Snowflake
 
 ---
 
-## Ligues couvertes
+## Compétitions couvertes (11)
 
+**Top 5 Ligues Européennes**
 | Ligue | Code | Pays |
 |-------|------|------|
 | Premier League | PL | Angleterre |
@@ -42,6 +43,20 @@ Streamlit-in-Snowflake
 | Bundesliga | BL1 | Allemagne |
 | Serie A | SA | Italie |
 | Ligue 1 | FL1 | France |
+
+**Compétitions Internationales**
+| Ligue | Code | Type |
+|-------|------|------|
+| Champions League | CL | UEFA |
+| European Championship | EC | UEFA |
+
+**Autres Ligues**
+| Ligue | Code | Pays |
+|-------|------|------|
+| Primeira Liga | PPL | Portugal |
+| Eredivisie | DED | Pays-Bas |
+| Championship | ELC | Angleterre |
+| Brasileirão | BSA | Brésil |
 
 ---
 
@@ -71,18 +86,26 @@ Streamlit-in-Snowflake
 | RAW | Donnees brutes JSON | RAW_MATCHES, RAW_TEAMS, RAW_STANDINGS... |
 | STAGING | Views LATERAL FLATTEN | V_MATCHES, V_TEAMS, V_STANDINGS... |
 | SILVER | Tables nettoyees | MATCHES, TEAMS, STANDINGS, SCORERS... |
-| GOLD | Tables agregees | LEAGUE_STANDINGS, TOP_SCORERS, TEAM_STATS... |
+| GOLD | Tables agregees | LEAGUE_STANDINGS, TOP_SCORERS, TEAM_STATS, MATCH_PATTERNS, REFEREE_STATS, GEOGRAPHIC_STATS |
 | COMMON | Objets partages | Stages, Secrets, Procedures, Tasks |
 
 ### Tables Silver
 
-| Table | Colonnes Cles |
-|-------|---------------|
-| MATCHES | MATCH_ID, HOME_TEAM, AWAY_TEAM, SCORE |
-| STANDINGS | TEAM_ID, POSITION, POINTS, WON, LOST |
-| TEAMS | TEAM_ID, TEAM_NAME, VENUE, COACH |
-| SCORERS | PLAYER_ID, GOALS, ASSISTS, TEAM |
-| COMPETITIONS | COMPETITION_CODE, NAME, AREA |
+| Table | Colonnes Cles | Enrichissements |
+|-------|---------------|-----------------|
+| MATCHES | MATCH_ID, HOME_TEAM, AWAY_TEAM, SCORE | + REFEREE_NATIONALITY, REFEREE_ID, MATCH_DURATION, AREA_NAME, AREA_CODE, DAY_OF_WEEK, MATCH_HOUR, CURRENT_MATCHDAY |
+| STANDINGS | TEAM_ID, POSITION, POINTS, WON, LOST | - |
+| TEAMS | TEAM_ID, TEAM_NAME, VENUE, COACH | - |
+| SCORERS | PLAYER_ID, GOALS, ASSISTS, TEAM | - |
+| COMPETITIONS | COMPETITION_CODE, NAME, AREA | - |
+
+### Tables Gold Analytics (nouvelles)
+
+| Table | Description | Dimensions Analysées |
+|-------|-------------|----------------------|
+| MATCH_PATTERNS | Patterns temporels des matchs | DAY_OF_WEEK, MATCH_HOUR, Weekend vs Midweek, AVG_GOALS |
+| REFEREE_STATS | Statistiques des arbitres | MATCHES_REFEREED, NATIONALITY, EXTRA_TIME%, AVG_GOALS |
+| GEOGRAPHIC_STATS | Analyse géographique | AREA_NAME, TOTAL_MATCHES, HOME_WIN%, AVG_GOALS |
 
 ---
 
@@ -217,14 +240,15 @@ Le projet utilise un role dedie `SNOWGOAL_ROLE` au lieu de `ACCOUNTADMIN`.
 | 4 | `01_raw/02_streams.sql` | SNOWGOAL_ROLE | Streams CDC |
 | 5 | Creer Secret + Upload Python | SNOWGOAL_ROLE | FOOTBALL_API_KEY + fichiers .py |
 | 6 | `01_raw/03_stored_procedure.sql` | SNOWGOAL_ROLE | Network Rule, Integration, Procedure |
-| 7 | `01_raw/04_fetch_all_procedure.sql` | SNOWGOAL_ROLE | Procedure FETCH_ALL_LEAGUES |
-| 8 | `CALL FETCH_ALL_LEAGUES()` | SNOWGOAL_ROLE | Chargement initial (5 min) |
-| 9 | `02_staging/01_views.sql` | SNOWGOAL_ROLE | Views FLATTEN |
-| 10 | `03_silver/01_tables.sql` | SNOWGOAL_ROLE | Tables Silver |
-| 11 | `03_silver/02_merge.sql` | SNOWGOAL_ROLE | MERGE RAW vers Silver |
+| 7 | `01_raw/04_fetch_all_procedure.sql` | SNOWGOAL_ROLE | Procedure FETCH_ALL_LEAGUES (11 ligues) |
+| 8 | `CALL FETCH_ALL_LEAGUES()` | SNOWGOAL_ROLE | Chargement initial (~6 min, 30s entre ligues) |
+| 9 | `02_staging/01_views.sql` | SNOWGOAL_ROLE | Views FLATTEN (+ 8 colonnes enrichies) |
+| 10 | `03_silver/01_tables.sql` | SNOWGOAL_ROLE | Tables Silver (MATCHES enrichie) |
+| 11 | `03_silver/02_merge.sql` | SNOWGOAL_ROLE | MERGE RAW vers Silver (+ nouvelles colonnes) |
 | 12 | `04_gold/01_dynamic_tables.sql` | SNOWGOAL_ROLE | Dynamic Tables |
-| 13 | `05_tasks/01_tasks.sql` | SNOWGOAL_ROLE | Tasks DAG |
-| 14 | `06_streamlit/01_deploy_app.sql` | SNOWGOAL_ROLE | Dashboard Streamlit |
+| 13 | `04_gold/06_match_analytics.sql` | SNOWGOAL_ROLE | **Tables Analytics (NOUVEAU)** |
+| 14 | `05_tasks/01_tasks.sql` | SNOWGOAL_ROLE | Tasks DAG |
+| 15 | `06_streamlit/01_deploy_app.sql` | SNOWGOAL_ROLE | Dashboard Streamlit (+ Analytics page) |
 
 Apres l'etape 0, utiliser toujours `USE ROLE SNOWGOAL_ROLE;` pour toutes les operations.
 
@@ -232,13 +256,32 @@ Apres l'etape 0, utiliser toujours `USE ROLE SNOWGOAL_ROLE;` pour toutes les ope
 
 ## Dashboard Streamlit
 
-| Page | Description |
-|------|-------------|
-| Home | Vue d'ensemble avec stats live |
-| Standings | Classements par ligue |
-| Top Scorers | Podium des meilleurs buteurs |
-| Matches | Resultats et prochains matchs |
-| Teams | Details equipes avec stats Home/Away |
+| Page | Description | Visualisations |
+|------|-------------|----------------|
+| Home | Vue d'ensemble avec stats live | KPIs, tableaux |
+| Standings | Classements par ligue | Tableaux |
+| Top Scorers | Podium des meilleurs buteurs | Métriques, tableaux |
+| Matches | Resultats et prochains matchs | Tableaux |
+| Teams | Details equipes avec stats Home/Away | Métriques, tableaux |
+| **Analytics** | **Analyses avancées (NOUVEAU)** | **Plotly interactif** |
+
+### Analytics - Nouvelles visualisations Plotly
+
+**⏰ Time Patterns**
+- Weekend vs Midweek (bar charts)
+- Goals par heure (line chart)
+- Analyse par jour de semaine (bar + line)
+
+**👨‍⚖️ Referee Stats**
+- Top 10 arbitres (bar chart)
+- Distribution nationalités (treemap)
+- Spécialistes prolongations (bar chart)
+- Goals vs Experience (scatter plot)
+
+**🌍 Geographic Analysis**
+- Matchs par pays (bar chart)
+- Home Advantage (bar chart + pie chart)
+- Goals vs Home Win% (scatter plot)
 
 Acces : `Snowsight > Streamlit > SNOWGOAL_DASHBOARD`
 
