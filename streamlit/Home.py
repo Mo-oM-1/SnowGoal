@@ -16,7 +16,7 @@ st.set_page_config(
 # Header
 st.markdown("# ⚽ SnowGoal")
 st.markdown("**Football Analytics Pipeline - 100% Snowflake Native**")
-st.info("📅 **Season 2024-2025** | Data refreshes automatically 3x daily")
+st.info("📅 **Season 2025-2026** | Data refreshes automatically 3x daily")
 
 st.divider()
 
@@ -85,7 +85,7 @@ except Exception as e:
 
 # Footer
 st.divider()
-st.caption("Season 2024-2025 | Data source: football-data.org | Refresh: 3x daily (7h, 17h, 00h)")
+st.caption("Season 2025-2026 | Data source: football-data.org | Refresh: 3x daily (7h, 17h, 00h)")
 
 # Sidebar
 with st.sidebar:

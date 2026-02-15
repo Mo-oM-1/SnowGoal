@@ -14,7 +14,7 @@ from connection import run_query
 st.set_page_config(page_title="Insights | SnowGoal", page_icon="💡", layout="wide")
 
 st.title("💡 Key Insights & Metrics")
-st.info("📅 **Season 2024-2025** | Data refreshes automatically 3x daily (7h, 17h, 00h)")
+st.info("📅 **Season 2025-2026** | Data refreshes automatically 3x daily (7h, 17h, 00h)")
 
 # ============================================
 # Global Metrics
@@ -261,4 +261,4 @@ except Exception as e:
 st.divider()
 
 # Footer
-st.caption("💡 SnowGoal Insights | Season 2024-2025 | 11 competitions across Europe and Brazil")
+st.caption("💡 SnowGoal Insights | Season 2025-2026 | 11 competitions across Europe and Brazil")

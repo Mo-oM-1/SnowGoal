@@ -383,4 +383,4 @@ st.markdown("""
 st.divider()
 
 # Footer
-st.caption("📖 SnowGoal Documentation | Season 2024-2025 | Built 100% on Snowflake Native Features")
+st.caption("📖 SnowGoal Documentation | Season 2025-2026 | Built 100% on Snowflake Native Features")
