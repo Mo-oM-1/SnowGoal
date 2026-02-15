@@ -12,7 +12,25 @@ import _snowflake
 
 BASE_URL = "https://api.football-data.org/v4"
 
-COMPETITIONS = ["PL", "PD", "BL1", "SA", "FL1"]
+COMPETITIONS = [
+    # Top 5 European Leagues
+    "PL",   # Premier League (England)
+    "PD",   # La Liga (Spain)
+    "BL1",  # Bundesliga (Germany)
+    "SA",   # Serie A (Italy)
+    "FL1",  # Ligue 1 (France)
+
+    # International Competitions
+    "CL",   # UEFA Champions League
+    "WC",   # FIFA World Cup
+    "EC",   # UEFA European Championship
+
+    # Other European Leagues
+    "PPL",  # Primeira Liga (Portugal)
+    "DED",  # Eredivisie (Netherlands)
+    "ELC",  # Championship (England)
+    "BSA",  # Brasileirão (Brazil)
+]
 
 def fetch_api(endpoint, api_key):
     headers = {"X-Auth-Token": api_key}
