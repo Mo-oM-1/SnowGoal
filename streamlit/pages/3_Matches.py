@@ -18,7 +18,7 @@ LEAGUE_NAMES = {
     'SA': 'Serie A',
     'FL1': 'Ligue 1',
     'CL': 'Champions League',
-    'WC': 'World Cup',
+    
     'EC': 'European Championship',
     'PPL': 'Primeira Liga',
     'DED': 'Eredivisie',
@@ -28,7 +28,7 @@ LEAGUE_NAMES = {
 
 try:
     # League filter
-    comp_codes = ['All', 'PL', 'PD', 'BL1', 'SA', 'FL1', 'CL', 'WC', 'EC', 'PPL', 'DED', 'ELC', 'BSA']
+    comp_codes = ['All', 'PL', 'PD', 'BL1', 'SA', 'FL1', 'CL', 'EC', 'PPL', 'DED', 'ELC', 'BSA']
     comp_display = ['All Leagues'] + [LEAGUE_NAMES.get(c, c) for c in comp_codes[1:]]
     selected_idx = st.selectbox("Filter by League", range(len(comp_display)), format_func=lambda x: comp_display[x])
     selected_comp = comp_codes[selected_idx]

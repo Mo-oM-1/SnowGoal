@@ -22,7 +22,6 @@ COMPETITIONS = [
 
     # International Competitions
     "CL",   # UEFA Champions League
-    "WC",   # FIFA World Cup
     "EC",   # UEFA European Championship
 
     # Other European Leagues
@@ -31,6 +30,10 @@ COMPETITIONS = [
     "ELC",  # Championship (England)
     "BSA",  # Brasileirão (Brazil)
 ]
+
+# Rate limit: 10 calls/minute on free tier
+# 5 endpoints per league = need 30s between leagues to stay safe
+RATE_LIMIT_DELAY = 30  # seconds between competitions
 
 def fetch_api(endpoint, api_key):
     headers = {"X-Auth-Token": api_key}
@@ -107,9 +110,9 @@ def main(session: snowpark.Session) -> str:
     all_results = []
 
     for i, comp_code in enumerate(COMPETITIONS):
-        # Rate limit: wait 60s between competitions (except first)
+        # Rate limit: wait between competitions (except first)
         if i > 0:
-            time.sleep(60)
+            time.sleep(RATE_LIMIT_DELAY)
 
         result = fetch_competition_data(session, comp_code, api_key)
         all_results.append(result)

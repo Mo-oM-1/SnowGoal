@@ -19,7 +19,7 @@ LEAGUE_NAMES = {
     'SA': 'Serie A',
     'FL1': 'Ligue 1',
     'CL': 'Champions League',
-    'WC': 'World Cup',
+    
     'EC': 'European Championship',
     'PPL': 'Primeira Liga',
     'DED': 'Eredivisie',
