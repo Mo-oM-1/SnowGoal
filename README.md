@@ -115,8 +115,8 @@ Streamlit-in-Snowflake
 |-------|--------|-------------|---------|
 | Extract | football-data.org | RAW.RAW_* | Snowpark + External Access |
 | Flatten | RAW.RAW_* | STAGING.V_* | Views + LATERAL FLATTEN |
-| Transform | STAGING.V_* | SILVER.* | MERGE (incremental) |
-| Aggregate | SILVER.* | GOLD.* | CREATE OR REPLACE TABLE (manuel) |
+| Transform | STAGING.V_* | SILVER.* | MERGE (incremental via Tasks) |
+| Aggregate | SILVER.* | GOLD.* | INSERT OVERWRITE (via Tasks 3x/jour) |
 
 ---
 
@@ -142,16 +142,19 @@ TASK_MERGE_TO_SILVER (declenchee automatiquement)
    - MERGE incremental vers SILVER.STANDINGS
    - MERGE incremental vers SILVER.TEAMS
    - MERGE incremental vers SILVER.SCORERS
+   - MERGE incremental vers SILVER.COMPETITIONS
    - Deduplication avec QUALIFY ROW_NUMBER()
         |
         v
-TABLES GOLD (tables normales)
-   - LEAGUE_STANDINGS : classements enrichis
-   - TOP_SCORERS : meilleurs buteurs avec stats
-   - TEAM_STATS : statistiques par equipe
-   - MATCH_PATTERNS : patterns temporels
-   - REFEREE_STATS : stats arbitres
-   - GEOGRAPHIC_STATS : analyse geographique
+TASKS GOLD (declenchees automatiquement apres MERGE)
+   - TASK_REFRESH_LEAGUE_STANDINGS
+   - TASK_REFRESH_TOP_SCORERS
+   - TASK_REFRESH_TEAM_STATS
+   - TASK_REFRESH_RECENT_MATCHES
+   - TASK_REFRESH_UPCOMING_FIXTURES
+   - TASK_REFRESH_MATCH_PATTERNS (analytics)
+   - TASK_REFRESH_REFEREE_STATS (analytics)
+   - TASK_REFRESH_GEOGRAPHIC_STATS (analytics)
         |
         v
 STREAMLIT DASHBOARD (lecture temps reel)
@@ -163,9 +166,16 @@ STREAMLIT DASHBOARD (lecture temps reel)
 
 | Composant | Type | Frequence | Description |
 |-----------|------|-----------|-------------|
-| TASK_FETCH_ALL_LEAGUES | Task CRON | Toutes les 6h | `0 */6 * * * UTC` |
+| TASK_FETCH_ALL_LEAGUES | Task CRON | 3x/jour | `0 7,17,0 * * * Europe/Paris` |
 | TASK_MERGE_TO_SILVER | Task DAG | Apres FETCH | Dependance `AFTER` |
-| Tables GOLD | Tables normales | - | `CREATE OR REPLACE TABLE` |
+| TASK_REFRESH_LEAGUE_STANDINGS | Task DAG | Apres MERGE | INSERT OVERWRITE |
+| TASK_REFRESH_TOP_SCORERS | Task DAG | Apres MERGE | INSERT OVERWRITE |
+| TASK_REFRESH_TEAM_STATS | Task DAG | Apres MERGE | INSERT OVERWRITE |
+| TASK_REFRESH_RECENT_MATCHES | Task DAG | Apres MERGE | INSERT OVERWRITE |
+| TASK_REFRESH_UPCOMING_FIXTURES | Task DAG | Apres MERGE | INSERT OVERWRITE |
+| TASK_REFRESH_MATCH_PATTERNS | Task DAG | Apres MERGE | INSERT OVERWRITE (analytics) |
+| TASK_REFRESH_REFEREE_STATS | Task DAG | Apres MERGE | INSERT OVERWRITE (analytics) |
+| TASK_REFRESH_GEOGRAPHIC_STATS | Task DAG | Apres MERGE | INSERT OVERWRITE (analytics) |
 | Streamlit Data | Requetes SQL | Temps reel | Lecture des tables GOLD |
 
 ### Gestion des Tasks
@@ -203,7 +213,7 @@ EXECUTE TASK TASK_FETCH_ALL_LEAGUES;
 
 ### Surveillance
 
-Verification des tables GOLD :
+Verification des tables GOLD (refresh automatique) :
 
 ```sql
 -- Verifier le contenu des tables GOLD
@@ -212,6 +222,10 @@ UNION ALL
 SELECT 'TOP_SCORERS', COUNT(*) FROM GOLD.TOP_SCORERS
 UNION ALL
 SELECT 'TEAM_STATS', COUNT(*) FROM GOLD.TEAM_STATS
+UNION ALL
+SELECT 'RECENT_MATCHES', COUNT(*) FROM GOLD.RECENT_MATCHES
+UNION ALL
+SELECT 'UPCOMING_FIXTURES', COUNT(*) FROM GOLD.UPCOMING_FIXTURES
 UNION ALL
 SELECT 'MATCH_PATTERNS', COUNT(*) FROM GOLD.MATCH_PATTERNS
 UNION ALL
@@ -227,8 +241,17 @@ TASK_FETCH_ALL_LEAGUES (root)
     |
     +---> TASK_MERGE_TO_SILVER (child)
               |
-              +---> [Tables GOLD creees manuellement]
+              +---> TASK_REFRESH_LEAGUE_STANDINGS
+              +---> TASK_REFRESH_TOP_SCORERS
+              +---> TASK_REFRESH_TEAM_STATS
+              +---> TASK_REFRESH_RECENT_MATCHES
+              +---> TASK_REFRESH_UPCOMING_FIXTURES
+              +---> TASK_REFRESH_MATCH_PATTERNS
+              +---> TASK_REFRESH_REFEREE_STATS
+              +---> TASK_REFRESH_GEOGRAPHIC_STATS
 ```
+
+**Total : 10 tasks automatiques** (1 CRON root + 1 MERGE + 8 GOLD refresh)
 
 Les tasks enfants s'executent **uniquement** si la task parent reussit.
 
