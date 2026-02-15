@@ -240,8 +240,7 @@ st.header("🔄 Task Orchestration (DAG)")
 st.markdown("""
 ### Execution Flow
 
-**Total Tasks:** 7
-**Warehouse:** SNOWGOAL_WH_XS (auto-suspend: 60s)
+**Total Tasks :** 7
 **Refresh Frequency:** 3x daily (7h, 17h, 00h)
 """)
 
@@ -259,21 +258,21 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("### Data Layer")
     st.markdown("""
-    - **Storage**: Snowflake Tables (VARIANT for JSON)
-    - **Processing**: Snowpark Python Procedures
-    - **CDC**: Streams for change capture
-    - **Orchestration**: Tasks with DAG dependencies
-    - **Scheduling**: CRON (7h, 17h, 00h)
+    - **Storage** : Snowflake Tables (VARIANT for JSON)
+    - **Processing** : Snowpark Python Procedures
+    - **CDC** : Streams for change capture
+    - **Orchestration** : Tasks with DAG dependencies
+    - **Scheduling** : CRON (7h, 17h, 00h)
     """)
 
 with col2:
     st.markdown("### Infrastructure")
     st.markdown("""
-    - **Warehouse**: SNOWGOAL_WH_XS (auto-suspend 60s)
-    - **API**: football-data.org REST API
-    - **Security**: External Access Integration + Secrets
-    - **Frontend**: Streamlit Cloud
-    - **Version Control**: Git/GitHub
+    - **Warehouse** : SNOWGOAL_WH_XS (auto-suspend 60s)
+    - **API** : football-data.org REST API
+    - **Security** : External Access Integration + Secrets
+    - **Frontend** : Streamlit Cloud
+    - **Version Control** : Git/GitHub
     """)
 
 st.divider()
