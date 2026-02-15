@@ -43,10 +43,20 @@ SELECT
     m.RAW_DATA:score:winner::STRING AS WINNER,
     -- Referee
     m.RAW_DATA:referees[0]:name::STRING AS REFEREE_NAME,
+    m.RAW_DATA:referees[0]:nationality::STRING AS REFEREE_NATIONALITY,
+    m.RAW_DATA:referees[0]:id::INT AS REFEREE_ID,
+    -- Match context
+    m.RAW_DATA:score:duration::STRING AS MATCH_DURATION,
+    m.RAW_DATA:area:name::STRING AS AREA_NAME,
+    m.RAW_DATA:area:code::STRING AS AREA_CODE,
+    -- Time analytics
+    DAYNAME(m.RAW_DATA:utcDate::TIMESTAMP_NTZ) AS DAY_OF_WEEK,
+    HOUR(m.RAW_DATA:utcDate::TIMESTAMP_NTZ) AS MATCH_HOUR,
     -- Season info
     m.RAW_DATA:season:id::INT AS SEASON_ID,
     m.RAW_DATA:season:startDate::DATE AS SEASON_START,
     m.RAW_DATA:season:endDate::DATE AS SEASON_END,
+    m.RAW_DATA:season:currentMatchday::INT AS CURRENT_MATCHDAY,
     m.RAW_DATA:lastUpdated::TIMESTAMP_NTZ AS LAST_UPDATED
 FROM SNOWGOAL_DB.RAW.RAW_MATCHES m
 WHERE m.RAW_DATA:id IS NOT NULL
@@ -82,10 +92,20 @@ SELECT
     f.value:score:winner::STRING AS WINNER,
     -- Referee
     f.value:referees[0]:name::STRING AS REFEREE_NAME,
+    f.value:referees[0]:nationality::STRING AS REFEREE_NATIONALITY,
+    f.value:referees[0]:id::INT AS REFEREE_ID,
+    -- Match context
+    f.value:score:duration::STRING AS MATCH_DURATION,
+    f.value:area:name::STRING AS AREA_NAME,
+    f.value:area:code::STRING AS AREA_CODE,
+    -- Time analytics
+    DAYNAME(f.value:utcDate::TIMESTAMP_NTZ) AS DAY_OF_WEEK,
+    HOUR(f.value:utcDate::TIMESTAMP_NTZ) AS MATCH_HOUR,
     -- Season info
     f.value:season:id::INT AS SEASON_ID,
     f.value:season:startDate::DATE AS SEASON_START,
     f.value:season:endDate::DATE AS SEASON_END,
+    f.value:season:currentMatchday::INT AS CURRENT_MATCHDAY,
     f.value:lastUpdated::TIMESTAMP_NTZ AS LAST_UPDATED
 FROM SNOWGOAL_DB.RAW.RAW_MATCHES m,
 LATERAL FLATTEN(input => m.RAW_DATA:matches) f
