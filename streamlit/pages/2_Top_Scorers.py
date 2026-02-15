@@ -4,6 +4,7 @@ SnowGoal - Top Scorers Page
 
 import streamlit as st
 import sys
+import pandas as pd
 sys.path.append('..')
 from connection import run_query
 
@@ -71,7 +72,12 @@ try:
                     with col:
                         st.markdown(f"### {medals[i]} {player['PLAYER_NAME']}")
                         st.markdown(f"**{player['TEAM_NAME']}**")
-                        st.markdown(f"⚽ **{int(player['GOALS'])} goals** | 🅰️ {int(player['ASSISTS'] or 0)} assists")
+
+                        # Handle NaN/NULL values
+                        goals = int(player['GOALS']) if pd.notna(player['GOALS']) else 0
+                        assists = int(player['ASSISTS']) if pd.notna(player['ASSISTS']) else 0
+
+                        st.markdown(f"⚽ **{goals} goals** | 🅰️ {assists} assists")
 
             st.divider()
 
