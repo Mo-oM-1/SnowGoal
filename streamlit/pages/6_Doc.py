@@ -253,7 +253,7 @@ The CRON schedule is optimized for European football match times:
 """)
 
 # Display Task Graph
-task_graph_path = Path(__file__).parent.parent / "assets" / "task_graph_snowgoal.png"
+task_graph_path = Path(__file__).parent.parent / "assets" / "task_arch_snowgoal.png"
 st.image(str(task_graph_path), width=900)
 
 st.divider()
@@ -315,8 +315,8 @@ st.markdown("""
      - 3 Advanced Analytics tables (using enrichment columns)
    - No dependencies between them
 
-**Estimated execution time:** 2-3 minutes per run
-**Daily credit consumption:** < 0.1 credits
+**Estimated execution time:** 50mn
+**Rate limit 10 call per minutes
 """)
 
 st.divider()
