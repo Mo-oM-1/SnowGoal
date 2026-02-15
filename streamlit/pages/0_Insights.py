@@ -55,27 +55,64 @@ try:
     # ============================================
     st.header("🔍 Data-Driven Insights")
 
-    # Insight 1: Best time to score goals
-    st.subheader("When are most goals scored?")
+    # Insight 1: High-scoring matches
+    st.subheader("Match Excitement Analysis")
 
-    goals_by_hour = run_query("""
+    high_scoring = run_query("""
         SELECT
-            MATCH_HOUR,
-            COUNT(*) AS matches,
-            ROUND(AVG(HOME_SCORE + AWAY_SCORE), 2) AS avg_goals,
-            SUM(HOME_SCORE + AWAY_SCORE) AS total_goals
+            COUNT(*) as total_matches,
+            SUM(CASE WHEN HOME_SCORE + AWAY_SCORE >= 4 THEN 1 ELSE 0 END) as high_scoring,
+            ROUND(100.0 * high_scoring / total_matches, 1) as high_scoring_pct,
+            ROUND(AVG(ABS(HOME_SCORE - AWAY_SCORE)), 2) as avg_goal_difference
         FROM SILVER.MATCHES
         WHERE STATUS = 'FINISHED'
-          AND MATCH_HOUR IS NOT NULL
-        GROUP BY MATCH_HOUR
-        ORDER BY avg_goals DESC
-        LIMIT 1
     """)
 
-    if not goals_by_hour.empty:
-        best_hour = goals_by_hour['MATCH_HOUR'].iloc[0]
-        avg_goals = goals_by_hour['AVG_GOALS'].iloc[0]
-        st.success(f"🎯 **Insight:** Matches starting at **{best_hour}:00 UTC** have the highest average goals: **{avg_goals} goals/match**")
+    if not high_scoring.empty:
+        hs_pct = high_scoring['HIGH_SCORING_PCT'].iloc[0]
+        avg_diff = high_scoring['AVG_GOAL_DIFFERENCE'].iloc[0]
+        st.success(f"⚡ **Insight:** **{hs_pct}%** of matches had 4+ goals (high-scoring). Average goal difference: **{avg_diff} goals**")
+
+    # Insight 2: Comeback Analysis
+    st.subheader("Comeback Frequency")
+
+    comebacks = run_query("""
+        SELECT
+            COUNT(*) as total_matches,
+            SUM(CASE WHEN (HALF_TIME_HOME < HALF_TIME_AWAY AND WINNER = 'HOME_TEAM')
+                       OR (HALF_TIME_HOME > HALF_TIME_AWAY AND WINNER = 'AWAY_TEAM')
+                THEN 1 ELSE 0 END) as comebacks,
+            ROUND(100.0 * comebacks / total_matches, 1) as comeback_pct
+        FROM SILVER.MATCHES
+        WHERE STATUS = 'FINISHED'
+          AND HALF_TIME_HOME IS NOT NULL
+          AND WINNER IN ('HOME_TEAM', 'AWAY_TEAM')
+    """)
+
+    if not comebacks.empty:
+        cb_pct = comebacks['COMEBACK_PCT'].iloc[0]
+        cb_count = comebacks['COMEBACKS'].iloc[0]
+        st.success(f"🎢 **Insight:** **{cb_pct}%** of matches featured a comeback ({int(cb_count):,} matches - losing at HT, winning at FT)")
+
+    # Insight 3: When are goals scored?
+    st.subheader("Goal Distribution by Half")
+
+    half_goals = run_query("""
+        SELECT
+            SUM(HALF_TIME_HOME + HALF_TIME_AWAY) as first_half_goals,
+            SUM((FULL_TIME_HOME - HALF_TIME_HOME) + (FULL_TIME_AWAY - HALF_TIME_AWAY)) as second_half_goals,
+            ROUND(100.0 * second_half_goals / (first_half_goals + second_half_goals), 1) as second_half_pct
+        FROM SILVER.MATCHES
+        WHERE STATUS = 'FINISHED'
+          AND HALF_TIME_HOME IS NOT NULL
+          AND FULL_TIME_HOME IS NOT NULL
+    """)
+
+    if not half_goals.empty:
+        sh_pct = half_goals['SECOND_HALF_PCT'].iloc[0]
+        sh_goals = int(half_goals['SECOND_HALF_GOALS'].iloc[0])
+        fh_goals = int(half_goals['FIRST_HALF_GOALS'].iloc[0])
+        st.success(f"⏱️ **Insight:** **{sh_pct}%** of goals are scored in the 2nd half ({sh_goals:,} vs {fh_goals:,} in 1st half)")
 
     # Insight 2: Home advantage by day
     st.subheader("Home Advantage Analysis")
