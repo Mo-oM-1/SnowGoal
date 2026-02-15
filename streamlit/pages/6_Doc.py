@@ -323,8 +323,9 @@ st.markdown("""
 
 1. **Streams (CDC) - Major Cost Saver** 🎯
    - **Without Streams**: MERGE would scan all 1,782+ matches on every refresh → high compute cost
-   - **With Streams**: Only process changed records (e.g., 10-50 updated matches) → 95%+ cost reduction
-   - Streams capture incremental changes, MERGE reads only new/modified rows
+   - **With Streams**: Only process changed records (e.g., 10-50 updated matches) → 95%+ compute reduction
+   - Streams use Time Travel metadata (no data duplication), MERGE reads only deltas
+   - Zero compute cost when idle, only consumes resources during MERGE execution
 
 2. **Warehouse auto-suspend**: 60 seconds
    - Minimizes idle compute costs
