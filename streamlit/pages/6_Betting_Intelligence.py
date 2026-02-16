@@ -23,14 +23,28 @@ st.info("📊 **Live Odds Analysis** | Data from multiple bookmakers | Updated c
 with st.sidebar:
     st.header("🔧 Filters")
 
-    # Competition filter
-    competitions = run_query("SELECT DISTINCT COMPETITION_CODE, COMPETITION_CODE as display FROM GOLD.ODDS_ANALYSIS ORDER BY COMPETITION_CODE")
+    # Competition filter with real names
+    competitions = run_query("""
+        SELECT DISTINCT
+            o.COMPETITION_CODE,
+            COALESCE(c.COMPETITION_NAME, o.COMPETITION_CODE) as COMPETITION_NAME
+        FROM GOLD.ODDS_ANALYSIS o
+        LEFT JOIN SILVER.COMPETITIONS c ON o.COMPETITION_CODE = c.COMPETITION_CODE
+        ORDER BY o.COMPETITION_CODE
+    """)
+
     if not competitions.empty:
-        selected_comps = st.multiselect(
+        # Create a mapping dict for code -> name
+        comp_dict = dict(zip(competitions['COMPETITION_NAME'], competitions['COMPETITION_CODE']))
+
+        selected_comp_names = st.multiselect(
             "Competitions",
-            options=competitions['COMPETITION_CODE'].tolist(),
-            default=competitions['COMPETITION_CODE'].tolist()[:3]
+            options=list(comp_dict.keys()),
+            default=list(comp_dict.keys())[:3]
         )
+
+        # Convert selected names back to codes for SQL queries
+        selected_comps = [comp_dict[name] for name in selected_comp_names]
     else:
         selected_comps = []
         st.warning("No odds data available")
