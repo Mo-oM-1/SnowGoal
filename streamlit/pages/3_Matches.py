@@ -42,13 +42,14 @@ try:
 
         recent_df = run_query(f"""
             SELECT
-                MATCH_DATE,
+                MATCH_DATETIME_DISPLAY,
                 COMPETITION_CODE,
                 MATCHDAY,
                 HOME_TEAM_NAME,
                 SCORE_DISPLAY,
                 AWAY_TEAM_NAME,
-                RESULT_DISPLAY
+                RESULT_DISPLAY,
+                MATCH_DATE
             FROM GOLD.RECENT_MATCHES
             WHERE STATUS = 'FINISHED' {where_clause}
             ORDER BY MATCH_DATE DESC
@@ -57,7 +58,7 @@ try:
 
         if not recent_df.empty:
             recent_df['LEAGUE'] = recent_df['COMPETITION_CODE'].map(LEAGUE_NAMES)
-            st.dataframe(recent_df[['MATCH_DATE', 'LEAGUE', 'MATCHDAY', 'HOME_TEAM_NAME', 'SCORE_DISPLAY', 'AWAY_TEAM_NAME']], use_container_width=True)
+            st.dataframe(recent_df[['MATCH_DATETIME_DISPLAY', 'LEAGUE', 'MATCHDAY', 'HOME_TEAM_NAME', 'SCORE_DISPLAY', 'AWAY_TEAM_NAME']], use_container_width=True)
         else:
             st.info("No recent matches found.")
 
