@@ -79,14 +79,14 @@ try:
     with col4:
         st.metric("🏆 Leagues", int(stats['COMPETITIONS'].iloc[0]))
 
-    # Data freshness indicator
+    # Connection status with data freshness
     hours_ago = stats['HOURS_SINCE_UPDATE'].iloc[0]
     if hours_ago < 2:
-        st.success(f"✅ **Data is fresh!** Last updated **{hours_ago} hours ago**")
+        st.success(f"✅ Connected to Snowflake | **Data is fresh!** Last updated **{hours_ago} hours ago**")
     elif hours_ago < 8:
-        st.info(f"ℹ️ **Data is up-to-date.** Last updated **{hours_ago} hours ago**")
+        st.info(f"✅ Connected to Snowflake | **Data is up-to-date.** Last updated **{hours_ago} hours ago**")
     else:
-        st.warning(f"⚠️ **Data needs refresh.** Last updated **{hours_ago} hours ago**")
+        st.warning(f"✅ Connected to Snowflake | **Data needs refresh.** Last updated **{hours_ago} hours ago**")
 
 except Exception as e:
     st.warning("⚠️ Could not load live stats")
