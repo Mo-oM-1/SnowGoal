@@ -108,12 +108,14 @@ if selected_comps:
             o.HOME_ODDS,
             o.DRAW_ODDS,
             o.AWAY_ODDS,
-            o.COMMENCE_TIME
+            o.COMMENCE_TIME,
+            o.HOME_TEAM,
+            o.AWAY_TEAM
         FROM SILVER.ODDS o
         WHERE o.COMPETITION_CODE IN ('{comp_filter}')
           AND o.COMMENCE_TIME > CURRENT_TIMESTAMP()
           AND o.COMMENCE_TIME <= DATEADD('day', {days_ahead}, CURRENT_TIMESTAMP())
-        ORDER BY o.COMMENCE_TIME, o.MATCH, o.BOOKMAKER_TITLE
+        ORDER BY o.COMMENCE_TIME, o.HOME_TEAM, o.AWAY_TEAM, o.BOOKMAKER_TITLE
         LIMIT 500
     """)
 
