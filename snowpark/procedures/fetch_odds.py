@@ -10,13 +10,19 @@ import _snowflake
 
 BASE_URL = "https://api.the-odds-api.com/v4/sports"
 
-# League mapping: The Odds API sport keys -> our competition codes
+# League mapping: The Odds API sport keys -> our competition codes (all 11 competitions)
 LEAGUES = {
     'soccer_epl': 'PL',
     'soccer_spain_la_liga': 'PD',
     'soccer_germany_bundesliga': 'BL1',
     'soccer_italy_serie_a': 'SA',
-    'soccer_france_ligue_one': 'FL1'
+    'soccer_france_ligue_one': 'FL1',
+    'soccer_uefa_champs_league': 'CL',
+    'soccer_uefa_european_championship': 'EC',
+    'soccer_portugal_primeira_liga': 'PPL',
+    'soccer_netherlands_eredivisie': 'DED',
+    'soccer_england_league_championship': 'ELC',
+    'soccer_brazil_campeonato': 'BSA'
 }
 
 def escape_sql(s):
@@ -49,8 +55,8 @@ def main(session: snowpark.Session) -> str:
                 # Insert raw game data with all bookmakers
                 json_str = escape_sql(json.dumps(game))
                 session.sql(f"""
-                    INSERT INTO RAW.RAW_ODDS (COMPETITION_CODE, RAW_DATA)
-                    SELECT '{competition_code}', PARSE_JSON('{json_str}')
+                    INSERT INTO RAW.RAW_ODDS (RAW_DATA, COMPETITION_CODE)
+                    SELECT PARSE_JSON('{json_str}'), '{competition_code}'
                 """).collect()
                 total_records += 1
 

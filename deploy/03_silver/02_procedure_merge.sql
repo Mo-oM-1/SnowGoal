@@ -227,5 +227,34 @@ AS 'BEGIN
                 source.TYPE, source.EMBLEM, source.AREA_NAME, source.AREA_CODE,
                 source.AREA_FLAG, source.CURRENT_SEASON_ID, source.SEASON_START,
                 source.SEASON_END, source.CURRENT_MATCHDAY);
+    ------------------------------------------------------------------------
+    -- MERGE ODDS
+    ------------------------------------------------------------------------
+    MERGE INTO SILVER.ODDS AS target
+    USING (
+        SELECT DISTINCT GAME_ID, COMPETITION_CODE, COMMENCE_TIME, HOME_TEAM, AWAY_TEAM,
+               BOOKMAKER_KEY, BOOKMAKER_TITLE, HOME_ODDS, DRAW_ODDS, AWAY_ODDS, LAST_UPDATE
+        FROM STAGING.V_ODDS
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY GAME_ID, BOOKMAKER_KEY ORDER BY LOADED_AT DESC) = 1
+    ) AS source
+    ON target.GAME_ID = source.GAME_ID AND target.BOOKMAKER_KEY = source.BOOKMAKER_KEY
+    WHEN MATCHED THEN
+        UPDATE SET
+            COMPETITION_CODE = source.COMPETITION_CODE,
+            COMMENCE_TIME = source.COMMENCE_TIME,
+            HOME_TEAM = source.HOME_TEAM,
+            AWAY_TEAM = source.AWAY_TEAM,
+            BOOKMAKER_TITLE = source.BOOKMAKER_TITLE,
+            HOME_ODDS = source.HOME_ODDS,
+            DRAW_ODDS = source.DRAW_ODDS,
+            AWAY_ODDS = source.AWAY_ODDS,
+            LAST_UPDATE = source.LAST_UPDATE,
+            _UPDATED_AT = CURRENT_TIMESTAMP()
+    WHEN NOT MATCHED THEN
+        INSERT (GAME_ID, COMPETITION_CODE, COMMENCE_TIME, HOME_TEAM, AWAY_TEAM,
+                BOOKMAKER_KEY, BOOKMAKER_TITLE, HOME_ODDS, DRAW_ODDS, AWAY_ODDS, LAST_UPDATE)
+        VALUES (source.GAME_ID, source.COMPETITION_CODE, source.COMMENCE_TIME, source.HOME_TEAM,
+                source.AWAY_TEAM, source.BOOKMAKER_KEY, source.BOOKMAKER_TITLE, source.HOME_ODDS,
+                source.DRAW_ODDS, source.AWAY_ODDS, source.LAST_UPDATE);
     RETURN ''MERGE COMPLETED'';
 END';

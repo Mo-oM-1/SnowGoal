@@ -268,5 +268,45 @@ SELECT
     c.RAW_DATA:currentSeason:currentMatchday::INT AS CURRENT_MATCHDAY
 FROM SNOWGOAL_DB.RAW.RAW_COMPETITIONS c;
 
+-- ----------------------------------------
+-- V_ODDS - Flatten odds JSON from The Odds API
+-- ----------------------------------------
+CREATE OR REPLACE VIEW V_ODDS AS
+WITH outcomes_flattened AS (
+    SELECT
+        o.COMPETITION_CODE,
+        o.LOADED_AT,
+        o.RAW_DATA:id::STRING AS GAME_ID,
+        o.RAW_DATA:commence_time::TIMESTAMP_NTZ AS COMMENCE_TIME,
+        o.RAW_DATA:home_team::STRING AS HOME_TEAM,
+        o.RAW_DATA:away_team::STRING AS AWAY_TEAM,
+        b.value:key::STRING AS BOOKMAKER_KEY,
+        b.value:title::STRING AS BOOKMAKER_TITLE,
+        b.value:last_update::TIMESTAMP_NTZ AS LAST_UPDATE,
+        m.value:key::STRING AS MARKET_KEY,
+        out.value:name::STRING AS OUTCOME_NAME,
+        out.value:price::FLOAT AS ODDS
+    FROM SNOWGOAL_DB.RAW.RAW_ODDS o,
+        LATERAL FLATTEN(input => o.RAW_DATA:bookmakers) b,
+        LATERAL FLATTEN(input => b.value:markets) m,
+        LATERAL FLATTEN(input => m.value:outcomes) out
+    WHERE m.value:key::STRING = 'h2h'
+)
+SELECT
+    COMPETITION_CODE,
+    LOADED_AT,
+    GAME_ID,
+    COMMENCE_TIME,
+    HOME_TEAM,
+    AWAY_TEAM,
+    BOOKMAKER_KEY,
+    BOOKMAKER_TITLE,
+    LAST_UPDATE,
+    MAX(CASE WHEN OUTCOME_NAME = HOME_TEAM THEN ODDS END) AS HOME_ODDS,
+    MAX(CASE WHEN OUTCOME_NAME = 'Draw' THEN ODDS END) AS DRAW_ODDS,
+    MAX(CASE WHEN OUTCOME_NAME = AWAY_TEAM THEN ODDS END) AS AWAY_ODDS
+FROM outcomes_flattened
+GROUP BY COMPETITION_CODE, LOADED_AT, GAME_ID, COMMENCE_TIME, HOME_TEAM, AWAY_TEAM, BOOKMAKER_KEY, BOOKMAKER_TITLE, LAST_UPDATE;
+
 -- Verify
 SHOW VIEWS IN SCHEMA STAGING;

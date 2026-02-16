@@ -76,5 +76,14 @@ CREATE OR REPLACE TABLE RAW_PERSONS (
     SOURCE VARCHAR(50) DEFAULT 'football-data.org'
 );
 
+-- ----------------------------------------
+-- Odds (Cotes de paris)
+-- ----------------------------------------
+CREATE OR REPLACE TABLE RAW_ODDS (
+    RAW_DATA VARIANT NOT NULL,
+    COMPETITION_CODE VARCHAR(10),
+    LOADED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
 -- Verify
 SHOW TABLES IN SCHEMA RAW;
