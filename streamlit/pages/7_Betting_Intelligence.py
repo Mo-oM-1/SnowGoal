@@ -464,14 +464,14 @@ st.header("📊 Odds Data Summary")
 if selected_comps:
     summary = run_query(f"""
         SELECT
-            COUNT(DISTINCT GAME_ID) as total_games,
-            COUNT(DISTINCT BOOKMAKER_KEY) as total_bookmakers,
-            ROUND(AVG(BOOKMAKER_MARGIN_PCT), 2) as avg_margin,
-            MIN(COMMENCE_TIME) as next_match,
-            MAX(COMMENCE_TIME) as last_match
-        FROM GOLD.ODDS_ANALYSIS
-        WHERE COMPETITION_CODE IN ('{comp_filter}')
-          AND COMMENCE_TIME > CURRENT_TIMESTAMP()
+            COUNT(DISTINCT o.GAME_ID) as total_games,
+            (SELECT COUNT(DISTINCT BOOKMAKER_KEY) FROM SILVER.ODDS WHERE COMPETITION_CODE IN ('{comp_filter}')) as total_bookmakers,
+            ROUND(AVG(o.BOOKMAKER_MARGIN_PCT), 2) as avg_margin,
+            MIN(o.COMMENCE_TIME) as next_match,
+            MAX(o.COMMENCE_TIME) as last_match
+        FROM GOLD.ODDS_ANALYSIS o
+        WHERE o.COMPETITION_CODE IN ('{comp_filter}')
+          AND o.COMMENCE_TIME > CURRENT_TIMESTAMP()
     """)
 
     if not summary.empty:
