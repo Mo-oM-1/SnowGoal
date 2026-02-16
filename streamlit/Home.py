@@ -64,7 +64,9 @@ try:
             (SELECT COUNT(*) FROM SILVER.MATCHES) AS MATCHES,
             (SELECT COUNT(*) FROM SILVER.TEAMS) AS TEAMS,
             (SELECT COUNT(*) FROM SILVER.SCORERS) AS SCORERS,
-            (SELECT COUNT(*) FROM SILVER.COMPETITIONS) AS COMPETITIONS
+            (SELECT COUNT(*) FROM SILVER.COMPETITIONS) AS COMPETITIONS,
+            (SELECT MAX(_UPDATED_AT) FROM SILVER.MATCHES) AS LAST_UPDATE,
+            (SELECT DATEDIFF('hour', MAX(_UPDATED_AT), CURRENT_TIMESTAMP()) FROM SILVER.MATCHES) AS HOURS_SINCE_UPDATE
     """)
 
     col1, col2, col3, col4 = st.columns(4)
@@ -77,7 +79,14 @@ try:
     with col4:
         st.metric("🏆 Leagues", int(stats['COMPETITIONS'].iloc[0]))
 
-    st.success("✅ Connected to Snowflake")
+    # Data freshness indicator
+    hours_ago = stats['HOURS_SINCE_UPDATE'].iloc[0]
+    if hours_ago < 2:
+        st.success(f"✅ **Data is fresh!** Last updated **{hours_ago} hours ago**")
+    elif hours_ago < 8:
+        st.info(f"ℹ️ **Data is up-to-date.** Last updated **{hours_ago} hours ago**")
+    else:
+        st.warning(f"⚠️ **Data needs refresh.** Last updated **{hours_ago} hours ago**")
 
 except Exception as e:
     st.warning("⚠️ Could not load live stats")

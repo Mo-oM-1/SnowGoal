@@ -267,31 +267,6 @@ try:
                                   'HOME_WIN_PCT': 'Home Win %'})
             st.plotly_chart(fig, use_container_width=True)
 
-    st.divider()
-
-    # ============================================
-    # Data Freshness
-    # ============================================
-    st.header("🔄 Data Freshness")
-
-    data_freshness = run_query("""
-        SELECT
-            MAX(_UPDATED_AT) AS last_update,
-            DATEDIFF('hour', MAX(_UPDATED_AT), CURRENT_TIMESTAMP()) AS hours_since_update
-        FROM SILVER.MATCHES
-    """)
-
-    if not data_freshness.empty:
-        hours_ago = data_freshness['HOURS_SINCE_UPDATE'].iloc[0]
-        last_update = data_freshness['LAST_UPDATE'].iloc[0]
-
-        if hours_ago < 2:
-            st.success(f"✅ **Data is fresh!** Last updated **{hours_ago} hours ago** ({last_update})")
-        elif hours_ago < 8:
-            st.info(f"ℹ️ **Data is up-to-date.** Last updated **{hours_ago} hours ago** ({last_update})")
-        else:
-            st.warning(f"⚠️ **Data needs refresh.** Last updated **{hours_ago} hours ago** ({last_update})")
-
 except Exception as e:
     st.error(f"Error loading insights: {e}")
 
