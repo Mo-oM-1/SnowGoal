@@ -14,9 +14,9 @@ st.header("📊 Data Pipeline Flow")
 
 st.markdown("""
 ```
-football-data.org API
+football-data.org API + The Odds API
         |
-        ↓ (Snowpark Python Procedure)
+        ↓ (Snowpark Python Procedures)
 RAW Layer (VARIANT JSON)
         |
         ↓ (Streams CDC)
@@ -64,6 +64,7 @@ with col1:
     - `RAW_SCORERS`
     - `RAW_TEAMS`
     - `RAW_COMPETITIONS`
+    - `RAW_ODDS` 🎲
 
     **CDC:** Streams capture changes
     """)
@@ -79,6 +80,7 @@ with col2:
     - `SCORERS`
     - `TEAMS`
     - `COMPETITIONS`
+    - `ODDS` 🎲
 
     **Updates:** MERGE incremental
     """)
@@ -88,7 +90,7 @@ with col3:
     st.markdown("""
     **Format:** Aggregations
 
-    **Tables (8):**
+    **Tables (9):**
     - `LEAGUE_STANDINGS`
     - `TOP_SCORERS`
     - `TEAM_STATS`
@@ -97,6 +99,7 @@ with col3:
     - `MATCH_PATTERNS` ⭐
     - `REFEREE_STATS` ⭐
     - `GEOGRAPHIC_STATS` ⭐
+    - `ODDS_ANALYSIS` 🎲
 
     **Refresh:** INSERT OVERWRITE via Tasks
     """)
@@ -147,6 +150,7 @@ SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_MATCHES') AS HAS_DATA_MATCHES;
 SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_SCORERS') AS HAS_DATA_SCORERS;
 SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_STANDINGS') AS HAS_DATA_STANDINGS;
 SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_TEAMS') AS HAS_DATA_TEAMS;
+SELECT SYSTEM$STREAM_HAS_DATA('RAW.STREAM_RAW_ODDS') AS HAS_DATA_ODDS;
     """, language="sql")
 
 # Example 3: See stream content
@@ -277,7 +281,9 @@ with col2:
     st.markdown("### Infrastructure")
     st.markdown("""
     - **Warehouse** : SNOWGOAL_WH_XS (auto-suspend 60s)
-    - **API** : football-data.org REST API
+    - **APIs** :
+      - football-data.org (matches, standings, scorers)
+      - The Odds API (betting odds)
     - **Security** : External Access Integration + Secrets
     - **Frontend** : Streamlit Cloud
     - **Version Control** : Git/GitHub
@@ -298,25 +304,78 @@ st.markdown("""
    - Fetches data from football-data.org API
    - Inserts JSON into RAW tables
 
-2. **After step 1** - `TASK_MERGE_TO_SILVER`
+2. **After step 1** - `TASK_FETCH_ODDS`
+   - Calls Snowpark procedure `FETCH_ODDS()`
+   - Fetches betting odds from The Odds API
+   - Inserts JSON into RAW_ODDS table
+   - Covers all 11 competitions
+
+3. **After step 2** - `TASK_MERGE_TO_SILVER`
    - Calls stored procedure `SP_MERGE_TO_SILVER()`
-   - MERGE operations for 5 tables:
+   - MERGE operations for 6 tables:
      - Matches
      - Standings
      - Scorers
      - Teams
      - Competitions
+     - Odds 🎲
    - Incremental updates based on Streams CDC
 
-3. **After step 2** - **8 parallel GOLD refresh tasks**
+4. **After step 3** - **9 parallel GOLD refresh tasks**
    - All execute simultaneously using `INSERT OVERWRITE`
    - Full refresh of aggregated tables:
      - 5 Business Intelligence tables
      - 3 Advanced Analytics tables (using enrichment columns)
+     - 1 Betting Analytics table (ODDS_ANALYSIS) 🎲
    - No dependencies between them
 
 **Estimated execution time:** 50mn**
 **Rate limit 10 calls per minutes
+""")
+
+st.divider()
+
+# Betting Odds Integration
+st.header("🎲 Betting Odds Integration")
+
+st.markdown("""
+### Data Source
+**The Odds API** provides real-time betting odds from multiple bookmakers for all 11 competitions.
+
+### Coverage
+- 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (PL)
+- 🇪🇸 La Liga (PD)
+- 🇩🇪 Bundesliga (BL1)
+- 🇮🇹 Serie A (SA)
+- 🇫🇷 Ligue 1 (FL1)
+- 🏆 Champions League (CL)
+- 🇪🇺 European Championship (EC)
+- 🇵🇹 Primeira Liga (PPL)
+- 🇳🇱 Eredivisie (DED)
+- 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship (ELC)
+- 🇧🇷 Brasileirão (BSA)
+
+### Data Points
+For each upcoming match:
+- **Home/Draw/Away odds** from 10+ bookmakers
+- **Implied probabilities** (calculated from odds)
+- **Bookmaker margins** (overround %)
+- **Best odds** per outcome
+- **Average odds** across all bookmakers
+- **Last update** timestamp
+
+### Analytics Features
+The **Betting Intelligence** dashboard page provides:
+1. **Upcoming Matches** - Real-time odds and probabilities
+2. **Bookmaker Comparison** - Find best odds per outcome
+3. **Value Bets Detector** - Compare odds vs historical H2H data
+4. **Match Predictor** - Combine team form (90-day PPG) with odds
+5. **Odds Summary** - Games covered, bookmakers count, avg margin
+
+### API Rate Limits
+- **500 requests/month** on free tier
+- **~120 requests/month used** (11 leagues × 3 fetches/day × 30 days ÷ 8)
+- Well within limits ✅
 """)
 
 st.divider()
