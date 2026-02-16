@@ -297,7 +297,7 @@ if selected_comps:
                 m.COMPETITION_CODE,
                 COUNT(*) as recent_matches,
                 SUM(CASE WHEN m.WINNER = 'HOME_TEAM' THEN 3
-                         WHEN m.WINNER = 'DRAW' THEN 1 ELSE 0 END) as home_points,
+                         WHEN m.WINNER = 'DRAW' THEN 1 ELSE 0 END) as points,
                 ROUND(AVG(m.HOME_SCORE), 1) as avg_goals_scored,
                 ROUND(AVG(m.AWAY_SCORE), 1) as avg_goals_conceded
             FROM SILVER.MATCHES m
@@ -313,7 +313,7 @@ if selected_comps:
                 m.COMPETITION_CODE,
                 COUNT(*) as recent_matches,
                 SUM(CASE WHEN m.WINNER = 'AWAY_TEAM' THEN 3
-                         WHEN m.WINNER = 'DRAW' THEN 1 ELSE 0 END) as away_points,
+                         WHEN m.WINNER = 'DRAW' THEN 1 ELSE 0 END) as points,
                 ROUND(AVG(m.AWAY_SCORE), 1) as avg_goals_scored,
                 ROUND(AVG(m.HOME_SCORE), 1) as avg_goals_conceded
             FROM SILVER.MATCHES m
@@ -327,7 +327,7 @@ if selected_comps:
                 TEAM,
                 COMPETITION_CODE,
                 SUM(recent_matches) as total_matches,
-                ROUND(SUM(home_points + away_points) * 1.0 / SUM(recent_matches), 2) as ppg,
+                ROUND(SUM(points) * 1.0 / SUM(recent_matches), 2) as ppg,
                 ROUND(AVG(avg_goals_scored), 1) as avg_scored,
                 ROUND(AVG(avg_goals_conceded), 1) as avg_conceded
             FROM team_form
