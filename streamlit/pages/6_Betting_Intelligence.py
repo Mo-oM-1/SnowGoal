@@ -15,7 +15,7 @@ from connection import run_query
 st.set_page_config(page_title="Betting Intelligence | SnowGoal", page_icon="🎲", layout="wide")
 
 st.title("🎲 Betting Intelligence")
-st.info("📊 **Live Odds Analysis** | Data from multiple bookmakers | Updated continuously")
+st.info("📊 **Betting Odds Analysis** | Data from 10+ bookmakers | Refreshed 3x daily (07h, 17h, 00h)")
 
 # ============================================
 # Sidebar Filters
