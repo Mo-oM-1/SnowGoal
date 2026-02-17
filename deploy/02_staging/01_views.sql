@@ -1,5 +1,7 @@
 -- ============================================
--- SNOWGOAL - Staging Views (FLATTEN JSON)
+-- SNOWGOAL - Staging Views (FLATTEN JSON from Streams)
+-- ============================================
+-- Views read from STREAMS (CDC) to only process new/changed data
 -- ============================================
 
 USE ROLE SNOWGOAL_ROLE;
@@ -8,13 +10,9 @@ USE DATABASE SNOWGOAL_DB;
 USE SCHEMA STAGING;
 
 -- ----------------------------------------
--- V_MATCHES - Flatten matches JSON
--- Supports two formats:
---   1. Individual match JSON (fetch_all_leagues) where RAW_DATA:id exists
---   2. Array of matches (legacy) where RAW_DATA:matches exists
+-- V_MATCHES - Flatten matches JSON from Stream
 -- ----------------------------------------
 CREATE OR REPLACE VIEW V_MATCHES AS
--- Format 1: Individual match JSON (fetch_all_leagues procedure)
 SELECT
     m.ID AS RAW_ID,
     m.COMPETITION_CODE,
@@ -58,61 +56,12 @@ SELECT
     m.RAW_DATA:season:endDate::DATE AS SEASON_END,
     m.RAW_DATA:season:currentMatchday::INT AS CURRENT_MATCHDAY,
     m.RAW_DATA:lastUpdated::TIMESTAMP_NTZ AS LAST_UPDATED
-FROM SNOWGOAL_DB.RAW.RAW_MATCHES m
-WHERE m.RAW_DATA:id IS NOT NULL
-
-UNION ALL
-
--- Format 2: Array of matches (legacy format with matches array)
-SELECT
-    m.ID AS RAW_ID,
-    m.COMPETITION_CODE,
-    m.SEASON_YEAR,
-    m.LOADED_AT,
-    f.value:id::INT AS MATCH_ID,
-    f.value:utcDate::TIMESTAMP_NTZ AS MATCH_DATE,
-    f.value:status::STRING AS STATUS,
-    f.value:matchday::INT AS MATCHDAY,
-    f.value:stage::STRING AS STAGE,
-    -- Home Team
-    f.value:homeTeam:id::INT AS HOME_TEAM_ID,
-    f.value:homeTeam:name::STRING AS HOME_TEAM_NAME,
-    f.value:homeTeam:shortName::STRING AS HOME_TEAM_SHORT,
-    f.value:homeTeam:tla::STRING AS HOME_TEAM_TLA,
-    -- Away Team
-    f.value:awayTeam:id::INT AS AWAY_TEAM_ID,
-    f.value:awayTeam:name::STRING AS AWAY_TEAM_NAME,
-    f.value:awayTeam:shortName::STRING AS AWAY_TEAM_SHORT,
-    f.value:awayTeam:tla::STRING AS AWAY_TEAM_TLA,
-    -- Score
-    f.value:score:fullTime:home::INT AS HOME_SCORE,
-    f.value:score:fullTime:away::INT AS AWAY_SCORE,
-    f.value:score:halfTime:home::INT AS HOME_SCORE_HT,
-    f.value:score:halfTime:away::INT AS AWAY_SCORE_HT,
-    f.value:score:winner::STRING AS WINNER,
-    -- Referee
-    f.value:referees[0]:name::STRING AS REFEREE_NAME,
-    f.value:referees[0]:nationality::STRING AS REFEREE_NATIONALITY,
-    f.value:referees[0]:id::INT AS REFEREE_ID,
-    -- Match context
-    f.value:score:duration::STRING AS MATCH_DURATION,
-    f.value:area:name::STRING AS AREA_NAME,
-    f.value:area:code::STRING AS AREA_CODE,
-    -- Time analytics
-    DAYNAME(f.value:utcDate::TIMESTAMP_NTZ) AS DAY_OF_WEEK,
-    HOUR(f.value:utcDate::TIMESTAMP_NTZ) AS MATCH_HOUR,
-    -- Season info
-    f.value:season:id::INT AS SEASON_ID,
-    f.value:season:startDate::DATE AS SEASON_START,
-    f.value:season:endDate::DATE AS SEASON_END,
-    f.value:season:currentMatchday::INT AS CURRENT_MATCHDAY,
-    f.value:lastUpdated::TIMESTAMP_NTZ AS LAST_UPDATED
-FROM SNOWGOAL_DB.RAW.RAW_MATCHES m,
-LATERAL FLATTEN(input => m.RAW_DATA:matches) f
-WHERE m.RAW_DATA:matches IS NOT NULL;
+FROM SNOWGOAL_DB.RAW.STREAM_RAW_MATCHES m
+WHERE m.METADATA$ACTION = 'INSERT'
+  AND m.RAW_DATA:id IS NOT NULL;
 
 -- ----------------------------------------
--- V_STANDINGS - Flatten standings JSON
+-- V_STANDINGS - Flatten standings JSON from Stream
 -- ----------------------------------------
 CREATE OR REPLACE VIEW V_STANDINGS AS
 SELECT
@@ -135,17 +84,14 @@ SELECT
     t.value:goalsAgainst::INT AS GOALS_AGAINST,
     t.value:goalDifference::INT AS GOAL_DIFF,
     t.value:form::STRING AS FORM
-FROM SNOWGOAL_DB.RAW.RAW_STANDINGS s,
-LATERAL FLATTEN(input => s.RAW_DATA:standings[0]:table) t;
+FROM SNOWGOAL_DB.RAW.STREAM_RAW_STANDINGS s,
+LATERAL FLATTEN(input => s.RAW_DATA:standings[0]:table) t
+WHERE s.METADATA$ACTION = 'INSERT';
 
 -- ----------------------------------------
--- V_TEAMS - Flatten teams JSON
--- Supports two formats:
---   1. Individual team JSON (fetch_all_leagues) where RAW_DATA:id exists
---   2. Array of teams (legacy) where RAW_DATA:teams exists
+-- V_TEAMS - Flatten teams JSON from Stream
 -- ----------------------------------------
 CREATE OR REPLACE VIEW V_TEAMS AS
--- Format 1: Individual team JSON (fetch_all_leagues procedure)
 SELECT
     t.ID AS RAW_ID,
     t.COMPETITION_CODE,
@@ -163,41 +109,14 @@ SELECT
     t.RAW_DATA:coach:id::INT AS COACH_ID,
     t.RAW_DATA:coach:name::STRING AS COACH_NAME,
     t.RAW_DATA:coach:nationality::STRING AS COACH_NATIONALITY
-FROM SNOWGOAL_DB.RAW.RAW_TEAMS t
-WHERE t.RAW_DATA:id IS NOT NULL
-
-UNION ALL
-
--- Format 2: Array of teams (legacy format)
-SELECT
-    t.ID AS RAW_ID,
-    t.COMPETITION_CODE,
-    t.LOADED_AT,
-    f.value:id::INT AS TEAM_ID,
-    f.value:name::STRING AS TEAM_NAME,
-    f.value:shortName::STRING AS TEAM_SHORT,
-    f.value:tla::STRING AS TEAM_TLA,
-    f.value:crest::STRING AS TEAM_CREST,
-    f.value:address::STRING AS ADDRESS,
-    f.value:website::STRING AS WEBSITE,
-    f.value:founded::INT AS FOUNDED,
-    f.value:clubColors::STRING AS CLUB_COLORS,
-    f.value:venue::STRING AS VENUE,
-    f.value:coach:id::INT AS COACH_ID,
-    f.value:coach:name::STRING AS COACH_NAME,
-    f.value:coach:nationality::STRING AS COACH_NATIONALITY
-FROM SNOWGOAL_DB.RAW.RAW_TEAMS t,
-LATERAL FLATTEN(input => t.RAW_DATA:teams) f
-WHERE t.RAW_DATA:teams IS NOT NULL;
+FROM SNOWGOAL_DB.RAW.STREAM_RAW_TEAMS t
+WHERE t.METADATA$ACTION = 'INSERT'
+  AND t.RAW_DATA:id IS NOT NULL;
 
 -- ----------------------------------------
--- V_SCORERS - Flatten scorers JSON
--- Supports two formats:
---   1. Individual scorer JSON (fetch_all_leagues) where RAW_DATA:player:id exists
---   2. Array of scorers (legacy) where RAW_DATA:scorers exists
+-- V_SCORERS - Flatten scorers JSON from Stream
 -- ----------------------------------------
 CREATE OR REPLACE VIEW V_SCORERS AS
--- Format 1: Individual scorer JSON (fetch_all_leagues procedure)
 SELECT
     s.ID AS RAW_ID,
     s.COMPETITION_CODE,
@@ -217,37 +136,13 @@ SELECT
     s.RAW_DATA:assists::INT AS ASSISTS,
     s.RAW_DATA:penalties::INT AS PENALTIES,
     s.RAW_DATA:playedMatches::INT AS PLAYED_MATCHES
-FROM SNOWGOAL_DB.RAW.RAW_SCORERS s
-WHERE s.RAW_DATA:player:id IS NOT NULL
-
-UNION ALL
-
--- Format 2: Array of scorers (legacy format)
-SELECT
-    s.ID AS RAW_ID,
-    s.COMPETITION_CODE,
-    s.SEASON_YEAR,
-    s.LOADED_AT,
-    f.value:player:id::INT AS PLAYER_ID,
-    f.value:player:name::STRING AS PLAYER_NAME,
-    f.value:player:firstName::STRING AS FIRST_NAME,
-    f.value:player:lastName::STRING AS LAST_NAME,
-    f.value:player:nationality::STRING AS NATIONALITY,
-    f.value:player:position::STRING AS POSITION,
-    f.value:player:dateOfBirth::DATE AS DATE_OF_BIRTH,
-    f.value:team:id::INT AS TEAM_ID,
-    f.value:team:name::STRING AS TEAM_NAME,
-    f.value:team:shortName::STRING AS TEAM_SHORT,
-    f.value:goals::INT AS GOALS,
-    f.value:assists::INT AS ASSISTS,
-    f.value:penalties::INT AS PENALTIES,
-    f.value:playedMatches::INT AS PLAYED_MATCHES
-FROM SNOWGOAL_DB.RAW.RAW_SCORERS s,
-LATERAL FLATTEN(input => s.RAW_DATA:scorers) f
-WHERE s.RAW_DATA:scorers IS NOT NULL;
+FROM SNOWGOAL_DB.RAW.STREAM_RAW_SCORERS s
+WHERE s.METADATA$ACTION = 'INSERT'
+  AND s.RAW_DATA:player:id IS NOT NULL;
 
 -- ----------------------------------------
 -- V_COMPETITIONS - Flatten competitions JSON
+-- Note: No stream for competitions (table is small, full read is fine)
 -- ----------------------------------------
 CREATE OR REPLACE VIEW V_COMPETITIONS AS
 SELECT
@@ -269,7 +164,7 @@ SELECT
 FROM SNOWGOAL_DB.RAW.RAW_COMPETITIONS c;
 
 -- ----------------------------------------
--- V_ODDS - Flatten odds JSON from The Odds API
+-- V_ODDS - Flatten odds JSON from Stream
 -- ----------------------------------------
 CREATE OR REPLACE VIEW V_ODDS AS
 WITH outcomes_flattened AS (
@@ -286,11 +181,12 @@ WITH outcomes_flattened AS (
         m.value:key::STRING AS MARKET_KEY,
         out.value:name::STRING AS OUTCOME_NAME,
         out.value:price::FLOAT AS ODDS
-    FROM SNOWGOAL_DB.RAW.RAW_ODDS o,
+    FROM SNOWGOAL_DB.RAW.STREAM_RAW_ODDS o,
         LATERAL FLATTEN(input => o.RAW_DATA:bookmakers) b,
         LATERAL FLATTEN(input => b.value:markets) m,
         LATERAL FLATTEN(input => m.value:outcomes) out
     WHERE m.value:key::STRING = 'h2h'
+      AND o.METADATA$ACTION = 'INSERT'
 )
 SELECT
     COMPETITION_CODE,

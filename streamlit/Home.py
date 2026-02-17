@@ -24,13 +24,13 @@ st.divider()
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("### 🏆 Leagues Covered")
+    st.markdown("### 🏆 11 Competitions")
     st.markdown("""
-    - Premier League
-    - La Liga
-    - Bundesliga
-    - Serie A
-    - Ligue 1
+    - Premier League, La Liga
+    - Bundesliga, Serie A, Ligue 1
+    - Champions League, Euro
+    - Primeira Liga, Eredivisie
+    - Championship, Brasileirão
     """)
 
 with col2:
@@ -94,7 +94,7 @@ except Exception as e:
 
 # Footer
 st.divider()
-st.caption("Season 2025-2026 | Data source: football-data.org | Refresh: 3x daily (7h, 17h, 00h)")
+st.caption("Season 2025-2026 | 11 competitions | Data source: football-data.org | Refresh: 3x daily (7h, 17h, 00h)")
 
 # Sidebar
 with st.sidebar:
