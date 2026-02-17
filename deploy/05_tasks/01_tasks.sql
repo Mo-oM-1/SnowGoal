@@ -14,6 +14,7 @@ USE SCHEMA COMMON;
 CREATE OR REPLACE TASK TASK_FETCH_ALL_LEAGUES
     WAREHOUSE = SNOWGOAL_WH_XS
     SCHEDULE = 'USING CRON 0 7,17,0 * * * Europe/Paris'
+    USER_TASK_TIMEOUT_MS = 7200000
     COMMENT = 'Fetch data for all 5 European leagues from football-data.org (7h, 17h, 00h)'
 AS
 CALL FETCH_ALL_LEAGUES();
