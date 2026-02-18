@@ -262,6 +262,64 @@ st.image(str(task_graph_path), width=900)
 
 st.divider()
 
+# --- SECTION LOGGING & OBSERVABILITÉ ---
+st.header("🛡️ Logging & Observabilité")
+
+st.markdown("""
+### Pipeline Monitoring
+Afin de garantir la fiabilité des données et la transparence des flux, le projet intègre un système de monitoring centralisé. Chaque procédure Snowpark communique son état de santé à une table technique.
+
+- **Table de Logs :** `SNOWGOAL_DB.COMMON.PIPELINE_LOGS`
+- **Niveaux de Log :**
+    - `INFO` : Exécution réussie à 100%.
+    - `WARNING` : **Succès Partiel**. Utilisé notamment pour la gestion du *Rate Limiting* (ex: 10 ligues sur 11 chargées si l'API est saturée).
+    - `ERROR` : Échec critique nécessitant une intervention.
+""")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("💡 Résilience")
+    st.write("""
+    Le pipeline utilise une stratégie de **Graceful Degradation** : si l'appel à une ligue spécifique échoue (404 ou 429), le script logue l'erreur, passe à la suivante et termine son exécution au lieu de tout bloquer.
+    """)
+with col2:
+    st.subheader("🚀 Performance")
+    st.write("""
+    L'ingestion utilise le **Batch Inserting** (via Pandas et `write_pandas`). Les logs permettent de valider le volume de records insérés à chaque run.
+    """)
+
+with st.expander("🔍 Voir les derniers événements du pipeline (Live)"):
+    try:
+        # Import local pour utiliser ta fonction de connexion existante
+        from connection import run_query
+        
+        logs_query = """
+            SELECT 
+                EVENT_TIME, 
+                LEVEL, 
+                COMPONENT_NAME, 
+                MESSAGE,
+                STACK_TRACE
+            FROM SNOWGOAL_DB.COMMON.PIPELINE_LOGS 
+            ORDER BY EVENT_TIME DESC 
+            LIMIT 10
+        """
+        logs_df = run_query(logs_query)
+        st.dataframe(
+            logs_df,
+            column_config={
+                "EVENT_TIME": st.column_config.DatetimeColumn("Timestamp"),
+                "MESSAGE": st.column_config.TextColumn("Résumé", width="large"),
+                "STACK_TRACE": st.column_config.TextColumn("Détails Techniques", width="medium"),
+            },
+            use_container_width=True,
+            hide_index=True
+        )
+    except Exception as e:
+        st.error(f"Erreur de lecture des logs : {e}")
+
+st.divider()
+
 # Technical Stack
 st.header("⚙️ Technical Stack")
 
