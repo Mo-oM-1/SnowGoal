@@ -107,5 +107,6 @@ with st.sidebar:
     - **Matches** : Results & fixtures
     - **Teams** : Club details
     - **Analytics** : Advanced patterns
+    - **Betting Intelligence** : Compare ODDS
     - **Doc** : Full documentation
     """)
