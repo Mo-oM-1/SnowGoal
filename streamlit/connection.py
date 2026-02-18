@@ -11,7 +11,7 @@ def get_ttl_until_next_refresh():
     Returns TTL in seconds, minimum 60 seconds.
     """
     now = datetime.now()
-    refresh_hours = [6, 23]
+    refresh_hours = [7, 17, 0]
 
     # Find next refresh time
     for hour in refresh_hours:
