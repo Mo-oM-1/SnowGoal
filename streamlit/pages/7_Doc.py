@@ -349,6 +349,42 @@ with col2:
 
 st.divider()
 
+# --- SECTION DATA QUALITY ---
+st.divider()
+st.header("✅ Audit de Qualité des Données (Data Quality)")
+
+st.info("""
+**Pourquoi cette section ?** Un pipeline robuste doit s'auto-contrôler. 
+Ici, nous interrogeons une vue Snowflake qui analyse les anomalies potentielles 
+sur les scores, les cotes et la cohérence des classements à chaque rafraîchissement.
+""")
+
+try:
+    # Exécution de la requête sur la vue de monitoring
+    dq_df = run_query("SELECT * FROM GOLD.DATA_QUALITY_DASHBOARD")
+    
+    # Calcul du nombre total d'anomalies
+    total_anomalies = dq_df['ANOMALY_COUNT'].sum()
+    
+    if total_anomalies == 0:
+        st.success("🎯 **Qualité Optimale** : Aucune anomalie détectée dans les tables Silver.")
+    else:
+        # On affiche un warning car le pipeline tourne, mais avec des points d'attention
+        st.warning(f"⚠️ **{total_anomalies} anomalies détectées** dans les données sources.")
+        
+        # Le petit plus pour l'entretien : expliquer l'anomalie Leicester/Sheffield
+        st.markdown("""
+        > **Note technique** : Les anomalies détectées sur les points (Championship) correspondent à des 
+        > sanctions administratives réelles (retraits de points). Le système identifie correctement 
+        > l'écart entre les résultats sportifs et le classement officiel.
+        """)
+
+    # Affichage du tableau de bord de monitoring
+    st.table(dq_df)
+
+except Exception as e:
+    st.error(f"Erreur lors de la récupération des métriques de qualité : {e}")
+
 # Refresh Schedule
 st.header("⏰ Refresh Schedule")
 

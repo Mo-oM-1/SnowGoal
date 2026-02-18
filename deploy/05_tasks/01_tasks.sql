@@ -335,8 +335,24 @@ GROUP BY o.GAME_ID, o.COMPETITION_CODE, o.COMMENCE_TIME, o.HOME_TEAM, o.AWAY_TEA
 ORDER BY o.COMMENCE_TIME DESC;
 
 -- ----------------------------------------
+-- TASK 12: Check Data Quality
+-- ----------------------------------------
+CREATE OR REPLACE TASK TASK_CHECK_DATA_QUALITY
+    WAREHOUSE = SNOWGOAL_WH_XS
+    AFTER COMMON.TASK_MERGE_TO_SILVER
+AS
+    INSERT INTO COMMON.PIPELINE_LOGS (LEVEL, COMPONENT_NAME, MESSAGE)
+    SELECT 
+        'WARNING', 
+        'DATA_QUALITY', 
+        'Anomalie détectée : ' || CHECK_NAME || ' (' || ANOMALY_COUNT || ' lignes)'
+    FROM SNOWGOAL_DB.GOLD.DATA_QUALITY_DASHBOARD
+    WHERE ANOMALY_COUNT > 0;
+
+-- ----------------------------------------
 -- Resume tasks (enable DAG)
 -- ----------------------------------------
+ALTER TASK TASK_CHECK_DATA_QUALITY RESUME;
 ALTER TASK TASK_FETCH_ODDS RESUME;
 ALTER TASK TASK_MERGE_TO_SILVER RESUME;
 ALTER TASK TASK_REFRESH_LEAGUE_STANDINGS RESUME;
