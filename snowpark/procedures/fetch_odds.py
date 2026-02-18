@@ -1,16 +1,20 @@
 """
 SnowGoal - Fetch Betting Odds
-Fetches odds for all 5 European leagues from The Odds API
+Version: 2.0 - Production Ready
+Features: Rate Limiting, Batch Insert, Centralized Logging & Intelligent Status
 """
 
 import snowflake.snowpark as snowpark
+import pandas as pd
 import requests
 import json
+import time
 import _snowflake
+import traceback
 
 BASE_URL = "https://api.the-odds-api.com/v4/sports"
 
-# League mapping: The Odds API sport keys -> our competition codes (all 11 competitions)
+# DICTIONNAIRE OFFICIEL ET VÉRIFIÉ (The Odds API)
 LEAGUES = {
     'soccer_epl': 'PL',
     'soccer_spain_la_liga': 'PD',
@@ -21,16 +25,15 @@ LEAGUES = {
     'soccer_uefa_european_championship': 'EC',
     'soccer_portugal_primeira_liga': 'PPL',
     'soccer_netherlands_eredivisie': 'DED',
-    'soccer_england_league_championship': 'ELC',
+    'soccer_efl_champ': 'ELC',      # Corrigé : soccer_efl_champ
     'soccer_brazil_campeonato': 'BSA'
 }
 
-def escape_sql(s):
-    if s is None:
-        return ""
-    return str(s).replace("\\", "\\\\").replace("'", "''")
+# Respect des limites de l'API Free Tier (3 secondes entre chaque appel)
+RATE_LIMIT_DELAY = 3 
 
 def fetch_odds_for_league(sport_key, api_key):
+    """Effectue l'appel API pour une ligue spécifique"""
     url = f"{BASE_URL}/{sport_key}/odds"
     params = {
         'apiKey': api_key,
@@ -43,25 +46,86 @@ def fetch_odds_for_league(sport_key, api_key):
     return response.json()
 
 def main(session: snowpark.Session) -> str:
-    api_key = _snowflake.get_generic_secret_string('odds_api_key')
+    COMPONENT_NAME = 'FETCH_ODDS'
+    
+    try:
+        # Récupération sécurisée de la clé API depuis Snowflake Secrets
+        api_key = _snowflake.get_generic_secret_string('odds_api_key')
+        
+        all_rows = []
+        errors = []
+        
+        # 1. BOUCLE DE RÉCUPÉRATION (Avec Rate Limiting)
+        for i, (sport_key, competition_code) in enumerate(LEAGUES.items()):
+            try:
+                if i > 0:
+                    time.sleep(RATE_LIMIT_DELAY)
+                
+                games = fetch_odds_for_league(sport_key, api_key)
+                
+                for game in games:
+                    all_rows.append({
+                        "COMPETITION_CODE": competition_code,
+                        "RAW_DATA": json.dumps(game)
+                    })
+                    
+            except Exception as e:
+                # On log l'erreur spécifique à la ligue mais on continue le traitement
+                errors.append(f"{competition_code}: {str(e)}")
 
-    total_records = 0
+        # 2. BATCH INSERT (Optimisation des performances via Snowpark)
+        inserted_count = 0
+        if all_rows:
+            inserted_count = len(all_rows)
+            df = pd.DataFrame(all_rows)
+            
+            # Utilisation d'une table temporaire pour un chargement rapide
+            temp_table = "TEMP_RAW_ODDS"
+            session.write_pandas(df, temp_table, auto_create_table=True, overwrite=True, table_type="temp", quote_identifiers=False)
+            
+            # Insertion finale avec conversion VARIANT
+            session.sql(f"""
+                INSERT INTO RAW.RAW_ODDS (COMPETITION_CODE, RAW_DATA)
+                SELECT COMPETITION_CODE, PARSE_JSON(RAW_DATA)
+                FROM {temp_table}
+            """).collect()
 
-    for sport_key, competition_code in LEAGUES.items():
+        # 3. LOGIQUE DE STATUT (Success / Partial Success / Failed)
+        num_leagues = len(LEAGUES)
+        num_errors = len(errors)
+        
+        if num_errors == 0:
+            status = "SUCCESS"
+            log_level = 'INFO'
+        elif num_errors < num_leagues:
+            status = "PARTIAL SUCCESS"
+            log_level = 'WARNING'
+        else:
+            status = "FAILED"
+            log_level = 'ERROR'
+
+        summary = f"{status}: {num_leagues - num_errors}/{num_leagues} leagues loaded | Odds: {inserted_count}"
+        
+        if errors:
+            summary += f" | {num_errors} error(s) detected"
+
+        # 4. LOGGING CENTRALISÉ (Utilisation de Parameter Binding pour la sécurité)
+        session.sql(
+            "INSERT INTO SNOWGOAL_DB.COMMON.PIPELINE_LOGS (LEVEL, COMPONENT_NAME, MESSAGE, STACK_TRACE) VALUES (?, ?, ?, ?)",
+            params=[log_level, COMPONENT_NAME, summary, "; ".join(errors) if errors else None]
+        ).collect()
+
+        return summary
+
+    except Exception as e:
+        # Erreur critique (ex: échec de connexion, droits insuffisants)
+        error_msg = str(e)
+        stack_trace = traceback.format_exc()
         try:
-            games = fetch_odds_for_league(sport_key, api_key)
-
-            for game in games:
-                # Insert raw game data with all bookmakers
-                json_str = escape_sql(json.dumps(game))
-                session.sql(f"""
-                    INSERT INTO RAW.RAW_ODDS (RAW_DATA, COMPETITION_CODE)
-                    SELECT PARSE_JSON('{json_str}'), '{competition_code}'
-                """).collect()
-                total_records += 1
-
-        except Exception as e:
-            # Continue with other leagues if one fails
+            session.sql(
+                "INSERT INTO SNOWGOAL_DB.COMMON.PIPELINE_LOGS (LEVEL, COMPONENT_NAME, MESSAGE, STACK_TRACE) VALUES (?, ?, ?, ?)",
+                params=['ERROR', COMPONENT_NAME, f"CRITICAL FAILURE: {error_msg}", stack_trace]
+            ).collect()
+        except:
             pass
-
-    return f"SUCCESS: {len(LEAGUES)} leagues | Odds records: {total_records}"
+        return f"CRITICAL ERROR: {error_msg}"
